@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+build/
+.DS_Store
+firmware/ControleAcesso/Config.h
+.env
+.env.*
+!.env.example
+*.log
+*.bin
+*.elf
+*.zip
+.venv/
+work/

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Controle de acesso · Administração</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <header><div><span class="eyebrow">PROJETO ACADÊMICO · ESP32</span><h1>Controle de acesso</h1></div><span class="pill">Servidor local</span></header>
+  <main>
+    <section id="login" class="card login">
+      <span class="eyebrow">ADMINISTRAÇÃO</span><h2>Acesse o painel</h2>
+      <p>Consulte os registros da porta e gerencie a redefinição de senhas.</p>
+      <form id="login-form"><label for="admin-pin">Senha de administrador</label>
+        <input id="admin-pin" type="password" inputmode="numeric" pattern="[0-9]{10}" minlength="10" maxlength="10" autocomplete="current-password" required>
+        <button type="submit">Entrar no painel</button>
+      </form>
+    </section>
+    <p id="message" role="status" aria-live="polite"></p>
+    <div id="dashboard" hidden>
+      <div class="toolbar"><p id="updated">Aguardando consulta</p><div><button id="refresh" class="secondary">Atualizar</button><button id="logout" class="secondary">Sair</button></div></div>
+      <div class="metrics">
+        <section class="card"><span class="eyebrow">DISPOSITIVO</span><h2 id="device-status">Sem conexão registrada</h2><p id="device-detail">Conecte o ESP32 para receber dados.</p></section>
+        <section class="card"><span class="eyebrow">CADASTROS RECEBIDOS</span><h2 id="user-count">0 / 100</h2><p id="active-count">Nenhum cadastro recebido.</p></section>
+        <section class="card"><span class="eyebrow">FILA DE ENVIO</span><h2 id="queued">—</h2><p>Última quantidade informada pelo ESP32.</p></section>
+      </div>
+      <section class="card">
+        <div class="section-title"><div><span class="eyebrow">AUDITORIA</span><h2>Últimos eventos</h2></div><label class="filter">Filtrar por ID<input id="filter-id" type="number" min="1" max="100" placeholder="Todos"></label></div>
+        <p>Horário local do navegador. Eventos sem sincronização mostram sessão e tempo ligado.</p>
+        <div class="table-wrap"><table><thead><tr><th>Quando</th><th>ID</th><th>Evento</th><th>Método</th><th>Detalhe</th></tr></thead><tbody id="events"></tbody></table></div>
+        <p class="small">Até 200 eventos por consulta. O filtro busca o ID em todo o histórico recebido no SQLite.</p>
+      </section>
+      <div class="two-columns">
+        <section class="card">
+          <span class="eyebrow">CREDENCIAIS</span><h2>Redefinir senha</h2>
+          <p>A alteração será enviada quando o ESP32 estiver conectado. O dispositivo verificará se a senha é exclusiva.</p>
+          <form id="reset-form">
+            <label for="user-id">Pessoa</label><select id="user-id" required><option value="">Selecione um ID</option></select>
+            <label for="new-pin">Nova senha · 6 dígitos</label><input id="new-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+            <label for="confirm-pin">Confirme a nova senha</label><input id="confirm-pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required>
+            <button type="submit">Enviar redefinição</button>
+          </form>
+        </section>
+        <section class="card"><span class="eyebrow">ACOMPANHAMENTO</span><h2>Alterações de senha</h2><p>“Aplicada” significa que o ESP32 confirmou a gravação.</p><ul id="commands" class="commands"></ul></section>
+      </div>
+    </div>
+  </main>
+  <footer>Controle local de acesso · Senhas e digitais não aparecem no histórico.</footer>
+</body>
+</html>
