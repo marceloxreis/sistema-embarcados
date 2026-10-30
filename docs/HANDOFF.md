@@ -31,16 +31,18 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 
 ## 3. Estado Git
 
-- Branch: `feat/mega-esp32cam`. Último commit: `49218bd`. Nenhum commit novo.
-- Quase tudo é alteração local não commitada ou arquivo não rastreado
-  (`git status` lista ~66 entradas).
-- Arquivos da versão DevKit aparecem como apagados (`D`), entre eles
-  `firmware/ControleAcesso/*` e `tests/test_firmware.py`.
-- Novos diretórios não rastreados: `firmware/MegaControlador/`,
-  `firmware/Esp32CamRede/`, `firmware/shared/`, `scripts/`, `tests/fixtures/`
-  e dezenas de `tests/test_*.py` / `tests/test_*.cpp`.
+- Branch `feat/mega-esp32cam` com o commit `6b09569` ("Arquitetura Mega 2560 +
+  ESP32-CAM com foto por acesso autorizado"), enviado a origin.
+- Esse commit será incorporado à `main` por merge fast-forward logo após esta
+  atualização do handoff.
+- A cópia de trabalho atual fica na Área de Trabalho do dono
+  (`controle-acesso-esp32`). Existe uma cópia antiga em outra pasta do dono que
+  não deve mais ser usada.
+- `Config.h` locais (Mega e CAM) são ignorados pelo Git e ainda têm valores de
+  exemplo. Não versionar.
 - Antes de commitar: stage por arquivo, nunca por diretório. Confirme que
-  `Config.h` locais e `__pycache__` ficam fora do commit.
+  `Config.h`, `*.sqlite3` e `__pycache__` não entram no commit.
+- Commits sem linha `Co-Authored-By`.
 
 ## 4. O que foi feito em 30/10/2026
 
@@ -88,7 +90,7 @@ Auditoria completa com 10 frentes. Cada correção foi implementada e revisada.
 
 | Verificação | Resultado | Evidência |
 |---|---|---|
-| Suíte Python: `CONTROLE_TEST_LIBS=/tmp/controle-test-libs-20261029 CONTROLE_TEST_STRICT=1 python3 -m unittest discover -s tests -q` | 126 testes OK, 0 skipped, 28 s | verificado em host (reexecutado neste handoff) |
+| Suíte Python: `CONTROLE_TEST_LIBS=<pasta das libs de teste> CONTROLE_TEST_STRICT=1 python3 -m unittest discover -s tests -q` | 126 testes OK, 0 skipped, 28 s | verificado em host (reexecutado neste handoff) |
 | Mega `arduino:avr:mega` | 38996 B de flash, 4510 B de SRAM global, sem avisos | compilado, container Linux local |
 | CAM `esp32:esp32:esp32cam` | 1055069 B de flash, 60608 B de RAM global | compilado |
 | `node --check` do painel | OK | verificado em host |
@@ -106,21 +108,69 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
 - Os testes C++ recortam trechos do `.ino` por marcadores de texto. Se mudar
   assinatura ou marcador, confira `tests/` antes.
 
-## 7. Pendências conhecidas (não corrigidas)
+## 7. Pendências abertas (priorizadas)
 
-- Reset web aplicado dentro do enlace com tráfego intenso pode exceder o
-  `linkStash` (128 B) somado ao buffer de 64 B. O CRC rejeita e há retransmissão.
-- `holdRetry` da CAM não zera na queda de Wi-Fi (efeito de até 2 s).
-- Rota 404 descarta o resultado de reset (rota errada apaga resultados).
-- Falta teste de reenvio imediato após erro transitório que segue de rejeição
-  permanente.
-- UART não autenticada e HTTP sem TLS: fora do modelo de ameaça atual (uso honesto).
-- Fila em RAM perde itens em reboot (aceito).
-- Dependem de bancada: tempos, UART real, DY50, LCD, câmera, alimentação e pico
-  de pilha e heap.
+P2:
+- MEGA-03: corte de energia entre gravar o modelo no DY50 e salvar o registro
+  na EEPROM deixa digital órfã; a mesma pessoa não consegue recadastrar
+  ("Slot DY orfao"). `firmware/MegaControlador/MegaControlador.ino` (fluxo de
+  cadastro, `fingerFastSearch` na primeira digital).
+- MEGA-04: qualquer retorno não-OK de `getImage` (IMAGEFAIL/TIMEOUT) aborta o
+  cadastro inteiro; tolerar algumas falhas transitórias.
+- REQ-E4: com `storageReady=false` a digital mostra "Acesso negado / Cadastro
+  inativo" (enganoso) e `confirmEnrollment` retorna sem mensagem até o timeout;
+  E4 exige mensagem explícita de erro de armazenamento.
+- CAM-03: falha da câmera não chega ao servidor; acrescentar campo
+  `camera_ready` ao heartbeat (CAM + `server.py` + painel).
+- TST-02: faltam testes do Mega para debounce de 50 ms, cores do RGB
+  (`outputsTick`), texto do LCD com ID, tecla D/`*`/`#` e `pin_in_use`;
+  `outputsTick` e `doorTick` reais não são compilados nos testes.
+- SRV-02: banco sem índice em `events(received_at)` e sem política de retenção.
 
-## 8. Próximo passo exato
+P3:
+- MEGA-07: 9 textos do LCD com 17–18 colunas são cortados (inclui o menu E2
+  "1 Novo 2 Inativar"/"3 Reativar D Sair", "Operacao cancelada", "Cadastro
+  cancelado", "Verifique DY50/NVS", este com resíduo "NVS").
+- MEGA-08: tecla D ignorada por 2 s durante aviso. MEGA-09: senha com sistema
+  ocupado não mostra mensagem. Porta forçada ao fechar mostra "ID 000".
+- Reset web dentro do enlace com tráfego intenso pode exceder o `linkStash`
+  (128 B) somado ao buffer de 64 B. O CRC rejeita e há retransmissão.
+- CAM: `holdRetry` não zera na queda de Wi-Fi (até 2 s); HTTP 404 descarta o
+  resultado de reset; `cam_boot_id` gerado por `esp_random` antes do Wi-Fi
+  (entropia); falta teste de reenvio imediato após erro transitório que segue
+  de rejeição permanente.
+- Tabelas de nomes de eventos e motivos triplicadas (Mega, CAM, servidor).
+- Otimizações: Mega com `F()`/PROGMEM nos textos e `SerialFrame::kMaxBody` de
+  192 para 32 (~1,5–2 KB de SRAM; hoje 4510 B = 55%); fundir ~37 arquivos de
+  teste em ~10.
+- Fora do modelo de ameaça (uso honesto): UART não autenticada, HTTP sem TLS,
+  salt previsível.
+- Aceito: fila em RAM perde itens em reboot.
 
+## 8. Simulações ainda não feitas
+
+Nenhuma destas foi executada. Simulação não é confirmação física.
+
+- Wokwi (Mega + ESP32 por UART, LCD I2C, teclado, LEDs, buzzer, botões; sem
+  câmera e sem DY50): teste integrado mais próximo do real. Requer conta e
+  token do Wokwi CLI (serviço externo; pedir autorização ao dono).
+- simavr com o firmware completo do Mega: medir tempo real do hash de 100
+  registros, escrita em EEPROM e estouro da UART. Há imagem Docker local com
+  avr-gcc: `controle-acesso-avr-sim:local`; a compilação do Mega usa
+  `controle-acesso-avr-probe:local`.
+- Pico de pilha e heap do Mega: `-fstack-usage` e análise de `String`.
+- Painel em navegador real: 390 px, foco, fluxo de foto e reset.
+- Tudo de hardware continua pendente (bancada).
+
+## 9. Próximo passo exato
+
+Ordem sugerida antes da bancada:
+1. Painel em navegador real e simavr (rápidos, locais).
+2. MEGA-07, REQ-E4, MEGA-03, MEGA-04 e TST-02.
+3. CAM-03 e SRV-02.
+4. Wokwi, se o dono autorizar.
+
+Depois, a bancada conforme o roteiro existente:
 1. Configuração local, sem versionar:
    - `ADMIN_PIN` (10 dígitos) em `firmware/MegaControlador/Config.h`, arquivo
      ignorado pelo Git.
@@ -131,4 +181,4 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
 3. Depois: `docs/TESTES.md`, "Ensaios funcionais de bancada".
 4. Só então o ensaio da fechadura (`docs/MONTAGEM.md` seção 6).
 
-Nada disso foi executado. Os passos 2 a 4 dependem do dono e do hardware.
+Nada disso foi executado. A bancada depende do dono e do hardware.
