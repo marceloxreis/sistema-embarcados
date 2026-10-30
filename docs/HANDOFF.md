@@ -220,7 +220,8 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
   build do Wokwi, versionado nesse script. `build/` é ignorado pelo Git.
 - `wokwi-cli` 0.29.1 em `~/.wokwi/bin`. O token fica no Keychain do Mac (item
   `wokwi-cli-token`), nunca em arquivo. Não ler nem exibir o token.
-- Uso do `wokwi-cli`: plano gratuito, 50 min/mês, sessões até 5 min. Captura
+- Uso do `wokwi-cli`: plano gratuito, 50 min/mês, sessões até 5 min. Consumo total
+  aproximado no mês: ~10 de 50 min (30/10/2026). Captura
   (`--screenshot-*`) só numa execução sem cenário, com `--timeout 6000
   --timeout-exit-code 0 --screenshot-time 5000`; junto com cenário, a sessão ficou
   aberta até o limite de 5 min. O atributo `value` do `wokwi-slide-switch` não
@@ -301,14 +302,18 @@ física). Números em docs/VALIDACAO.md.
 - Wokwi (simulado, na nuvem do Wokwi; `simulacao/wokwi/`): Mega com LCD I2C,
   EEPROM, USB e leitura da porta (D30) em dois cenários. Boot com porta fechada:
   `queued=1`. Boot com porta aberta: `queued=2` (device_boot e forced_open). Captura
-  do LCD: "Senha ou digital" / "DY50 fora do ar". Não exercitados: teclado, LED RGB,
-  buzzer e saída da fechadura (ligados no diagrama, sem cenário). DY50 e ESP32-CAM
+  do LCD: "Senha ou digital" / "DY50 fora do ar". Teclado com 16 botões em matriz
+  (`diagram-teclado-botoes.json`, no lugar do keypad de membrana, que não tem
+  controle de automação): senha errada `123456#` mostra "Acesso negado" com canal
+  vermelho do LED RGB em D32; PIN admin `0000000000#` abre o menu (D32 e D34 em 1) e
+  a tecla D cancela. Os dois cenários passaram. Buzzer (D36) só checado em repouso,
+  não exercitado; saída D35 (fechadura) lida em 0, não acionada. DY50 e ESP32-CAM
   ausentes; o Wokwi não aceita duas placas programáveis no mesmo diagrama. Números
   em docs/VALIDACAO.md.
 
 Pendente:
-- Wokwi: cenários para teclado, LED RGB e buzzer, se útil. DY50 e ESP32-CAM seguem
-  fora da simulação.
+- Wokwi: só o buzzer (cenário de porta aberta por tempo ou entrada expirada, se
+  útil). DY50 e ESP32-CAM seguem fora da simulação.
 - Co-simulação Mega (simavr) + ESP32 (QEMU da Espressif): estudada e não feita.
   Viável com ressalvas, 2 a 4 dias; sem Wi-Fi, câmera e periféricos no QEMU; ganho
   pequeno frente à simulação integrada existente. Decisão do dono: não fazer agora.
@@ -328,7 +333,8 @@ Pendente:
 Ordem sugerida:
 1. Bancada, passo 3 de `docs/MONTAGEM.md` (Mega sozinho pelo USB), quando o dono
    estiver com a placa. O adaptador da ESP32-CAM ainda não chegou.
-2. Cenários Wokwi para teclado, LED RGB e buzzer, se útil.
+2. Wokwi: só o buzzer pendente (cenário de porta aberta por tempo ou entrada
+   expirada, se útil). Teclado e LED RGB já foram feitos.
 3. P2 de verificação de senha: decidir se faz verificação incremental.
 
 Depois, o roteiro de bancada existente:

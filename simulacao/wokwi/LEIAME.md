@@ -72,6 +72,25 @@ WOKWI_CLI_TOKEN="$(security find-generic-password -s wokwi-cli-token -w)" ~/.wok
 
 Não verificado: se `--screenshot-file` resolve o caminho a partir do diretório atual (raiz do repo, como os comandos acima) ou do projeto. Os comandos usam o caminho a partir da raiz; se a captura não aparecer, conferir o local real.
 
+## Diagrama com botões em matriz (teclado e cenários)
+
+Por que existe: o `wokwi-membrane-keypad` não tem controle de automação (`set-control`), então um cenário não consegue "apertar" uma tecla. O `diagram-teclado-botoes.json` troca o keypad por 16 `wokwi-pushbutton` (ids `k1`...`kD`, rótulos com a tecla). A fiação em matriz é eletricamente a mesma: o botão da linha r e coluna c liga D22..D25 (R1..R4) a D26..D29 (C1..C4), com o keymap do `.ino`. Mapa tecla -> botão: `1`=k1, `2`=k2, `3`=k3, `A`=kA, `4`=k4, `5`=k5, `6`=k6, `B`=kB, `7`=k7, `8`=k8, `9`=k9, `C`=kC, `*`=kS, `0`=k0, `#`=kH, `D`=kD. Pinos do botão: `1.l` na linha e `2.l` na coluna.
+
+Cenários (usam o diagrama de botões):
+
+- `scenario-teclado-senha-errada.yaml`: digita `123456#` e espera o aviso "Acesso negado" (canal vermelho do LED RGB em D32). Captura `build/erro.png`.
+- `scenario-teclado-admin.yaml`: digita `0` x10 + `#` (PIN do `Config.example.h`), espera o menu (magenta: D32 e D34 em 1), depois `D` cancela (D32 em 0). Captura `build/menu.png`.
+
+Rodados em 30/10/2026 (wokwi-cli 0.29.1): os dois terminaram com "Scenario completed successfully" (exit=0), com todos os expect-pin avaliados (`build/run-teclado-*.txt`). O `save-to` é relativo à pasta do projeto: as capturas ficaram em `simulacao/wokwi/build/erro.png` e `simulacao/wokwi/build/menu.png`. Tudo é simulado no Wokwi (teclado trocado por botões), não é teste em hardware. A captura sai do passo `take-screenshot` do cenário (não use `--screenshot-*` junto com cenário).
+
+```bash
+WOKWI_CLI_TOKEN="$(security find-generic-password -s wokwi-cli-token -w)" ~/.wokwi/bin/wokwi-cli simulacao/wokwi --diagram-file diagram-teclado-botoes.json --scenario scenario-teclado-senha-errada.yaml --timeout 30000 --serial-log-file simulacao/wokwi/build/serial-teclado-senha-errada.log
+```
+
+```bash
+WOKWI_CLI_TOKEN="$(security find-generic-password -s wokwi-cli-token -w)" ~/.wokwi/bin/wokwi-cli simulacao/wokwi --diagram-file diagram-teclado-botoes.json --scenario scenario-teclado-admin.yaml --timeout 30000 --serial-log-file simulacao/wokwi/build/serial-teclado-admin.log
+```
+
 ## Versionamento
 
 A pasta `simulacao/wokwi/build/` não deve ser versionada. O `.gitignore` da raiz já cobre `build/`, `*.hex` e `*.elf`, então ela fica fora do git. Esta etapa não editou o `.gitignore`.

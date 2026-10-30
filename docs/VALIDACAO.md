@@ -39,7 +39,7 @@ Níveis de evidência:
 | Wokwi: boot com porta fechada | 30/10/2026 | `wokwi-cli` 0.29.1, diagrama `simulacao/wokwi/diagram.json`, cenário `scenario-boot.yaml` | Serial: `BOOT boot=1 storage=ok lcd=ok dy50=indisponivel lock_mode=0`, `OK authenticated`, `last_id=0 queued=1`. Passou. Confirmados: EEPROM inicia; AUTH e STATUS pela USB; leitura do sensor de porta (D30) | simulado (Wokwi) |
 | Wokwi: boot com porta aberta | 30/10/2026 | Cenário `scenario-porta-aberta.yaml` (D30 desligado, só pull-up) | `queued=2` (eventos `device_boot` e `forced_open`). Passou | simulado (Wokwi) |
 | Wokwi: LCD I2C | 30/10/2026 | Captura de tela a 5 s, em execução sem cenário (`--timeout 6000 --timeout-exit-code 0 --screenshot-time 5000`) | LCD em 0x27, pinos D20/D21, texto correto: "Senha ou digital" / "DY50 fora do ar" | simulado (Wokwi) |
-| Wokwi: teclado, LED RGB, buzzer e saída da fechadura | 30/10/2026 | Ligados no diagrama (teclado D22 a D29; LED RGB D32/D33/D34; buzzer direto em D36, sem o transistor NPN do real; LED no D35 representando a entrada do driver da fechadura). Sem cenário | Não exercitados | não verificado |
+| Wokwi: teclado, LED RGB, saída da fechadura e buzzer | 30/10/2026 | `wokwi-cli` 0.29.1, diagrama `simulacao/wokwi/diagram-teclado-botoes.json`: 16 botões em matriz (D22 a D25 linhas, D26 a D29 colunas) no lugar do teclado de membrana, que não tem controle de automação. Cenários `scenario-teclado-senha-errada.yaml` e `scenario-teclado-admin.yaml`. LED RGB em D32/D33/D34; LED no D35 representando a entrada do driver da fechadura; buzzer direto em D36, sem o transistor NPN do real | Senha errada (`123456#`): D32=1, D33=0, D34=0; LCD "Acesso negado" / "Senha incorreta". Admin (`0000000000#`): D32=1, D33=0, D34=1 (menu), D35=0; LCD "1 Novo 2 Inativ." / "3 Reativ. D Sair"; tecla D: D32=0, D33=0. Os dois: "Scenario completed successfully", exit=0, expect-pin avaliados (`build/run-teclado-*.txt`). Teclado e LED RGB exercitados; D35 lido em 0; buzzer só checado em repouso, não exercitado (o firmware só toca em eventos de porta) | simulado (Wokwi, botões no lugar do keypad); buzzer não verificado |
 | Wokwi: DY50 e ESP32-CAM | 30/10/2026 | Ausentes no diagrama. O Wokwi não suporta duas placas programáveis no mesmo diagrama (documentação oficial) | Não simulados. A ligação Mega-CAM segue coberta só pela simulação integrada em host (`tests/test_integrated_simulation.py`) e pela bancada | não verificado (no Wokwi) |
 | Co-simulação Mega (simavr) + ESP32 (QEMU) | 30/10/2026 | Estudada, não executada | Viável com ressalvas, 2 a 4 dias; sem Wi-Fi, câmera e periféricos no QEMU. Ganho pequeno frente à simulação integrada existente. Decisão do dono: não fazer agora | não se aplica (não executada) |
 | Ensaios físicos | - | - | Nenhum executado | - |
@@ -111,7 +111,7 @@ CLI não executa. Para compilar, usou-se um ctags ARM64 indicado pela propriedad
   I²C/UART reais. Diferenças em relação à montagem real: buzzer direto no D36 (no
   real há transistor NPN); LED no D35 no lugar do driver da fechadura; DY50 e CAM
   ausentes. A fiação foi conferida por revisão de código contra `Config.example.h`,
-  `docs/MONTAGEM.md` e o `.ino`, sem divergências. Não executada na simulação:
-  teclado, LED RGB, buzzer e fechadura.
-- Plano gratuito do Wokwi: 50 min/mês, sessões até 5 min. Consumo aproximado nesta
-  sessão: ~8 min.
+  `docs/MONTAGEM.md` e o `.ino`, sem divergências. Não exercitados na simulação:
+  buzzer (D36) e acionamento da fechadura (a saída D35 só foi lida em 0 nos cenários de teclado).
+- Plano gratuito do Wokwi: 50 min/mês, sessões até 5 min. Consumo total aproximado
+  no mês: ~10 de 50 min.

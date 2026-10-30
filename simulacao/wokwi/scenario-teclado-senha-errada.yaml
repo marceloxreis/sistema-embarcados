@@ -1,0 +1,42 @@
+# Digita senha de 6 digitos errada e confirma com #. Usar com diagram-teclado-botoes.json.
+name: "Teclado: senha errada"
+version: 1
+author: controle-acesso-esp32
+steps:
+  - wait-serial: "BOOT boot="
+  - delay: 500ms
+  - set-control: {part-id: k1, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k1, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k2, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k2, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k3, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k3, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k4, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k4, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k5, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k5, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k6, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k6, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: kH, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: kH, name: pressed, value: 0}
+  - delay: 100ms
+  - delay: 300ms
+  - expect-pin: {part-id: mega, name: 32, value: 1}
+  - expect-pin: {part-id: mega, name: 33, value: 0}
+  - expect-pin: {part-id: mega, name: 34, value: 0}
+  - expect-pin: {part-id: mega, name: 35, value: 0}
+  - expect-pin: {part-id: mega, name: 36, value: 0}
+  - take-screenshot: {part-id: lcd1, save-to: build/erro.png}

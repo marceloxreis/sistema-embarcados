@@ -1,0 +1,64 @@
+# Entra no menu admin com 0 x10 + # e cancela com D. Usar com diagram-teclado-botoes.json.
+name: "Teclado: admin e cancelamento"
+version: 1
+author: controle-acesso-esp32
+steps:
+  - wait-serial: "BOOT boot="
+  - delay: 500ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: k0, name: pressed, value: 0}
+  - delay: 100ms
+  - set-control: {part-id: kH, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: kH, name: pressed, value: 0}
+  - delay: 100ms
+  - delay: 300ms
+  - expect-pin: {part-id: mega, name: 32, value: 1}
+  - expect-pin: {part-id: mega, name: 33, value: 0}
+  - expect-pin: {part-id: mega, name: 34, value: 1}
+  - expect-pin: {part-id: mega, name: 35, value: 0}
+  - take-screenshot: {part-id: lcd1, save-to: build/menu.png}
+  - set-control: {part-id: kD, name: pressed, value: 1}
+  - delay: 100ms
+  - set-control: {part-id: kD, name: pressed, value: 0}
+  - delay: 100ms
+  - delay: 300ms
+  - expect-pin: {part-id: mega, name: 32, value: 0}
+  - expect-pin: {part-id: mega, name: 33, value: 0}
