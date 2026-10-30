@@ -33,19 +33,13 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 
 ## 3. Estado Git
 
-- Branch `main` em `2c9aa85` ("Atualiza handoff com pendencias abertas e
-  simulacoes nao feitas"), igual a `origin/main` (verificado em host,
-  `git status -sb`, 30/10/2026). O commit `6b09569` (arquitetura Mega + CAM)
-  está no histórico da `main`.
-- Mudanças da sessão 2 **não commitadas**. Nada foi commitado; o commit só
-  acontece quando o dono pedir:
-  - modificados: `firmware/MegaControlador/MegaControlador.ino`,
-    `servidor/static/app.js`, `servidor/static/index.html`,
-    `servidor/static/style.css`, `tests/test_mega_logic.py`,
-    `tests/test_reinicio_perifericos_agent.py`, `docs/HANDOFF.md`,
-    `docs/MONTAGEM.md`, `docs/TESTES.md`, `docs/VALIDACAO.md`;
-  - novos (não rastreados): `tests/test_lcd_textos.py` e
-    `tests/test_mega_tst02.py`. Precisam entrar no commit.
+- Branch `main` em `60ddda6` ("Corrige pendencias P2 do Mega, painel e registros
+  da sessao 2"), igual a `origin/main`, sem mudanças pendentes (verificado em
+  host, `git status -sb`, 30/10/2026). O commit anterior `2c9aa85` fica como
+  histórico, e o commit `6b09569` (arquitetura Mega + CAM) continua no histórico
+  da `main`.
+- Os testes `tests/test_lcd_textos.py` e `tests/test_mega_tst02.py` já estão
+  versionados.
 - A cópia de trabalho atual fica na Área de Trabalho do dono
   (`controle-acesso-esp32`). Existe uma cópia antiga em outra pasta do dono que
   não deve mais ser usada.
@@ -310,11 +304,9 @@ Pendente:
 ## 9. Próximo passo exato
 
 Ordem sugerida antes da bancada:
-1. O dono decide o commit desta sessão (stage por arquivo; incluir
-   `tests/test_lcd_textos.py` e `tests/test_mega_tst02.py`).
-2. CAM-03 e SRV-02.
-3. P2 de verificação de senha: decidir se faz verificação incremental.
-4. Wokwi, se o dono autorizar.
+1. CAM-03 e SRV-02.
+2. P2 de verificação de senha: decidir se faz verificação incremental.
+3. Wokwi, se o dono autorizar.
 
 Depois, a bancada conforme o roteiro existente:
 1. Configuração local, sem versionar:
