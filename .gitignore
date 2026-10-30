@@ -5,7 +5,6 @@ __pycache__/
 *.sqlite3-wal
 build/
 .DS_Store
-firmware/ControleAcesso/Config.h
 .env
 .env.*
 !.env.example
@@ -15,3 +14,9 @@ firmware/ControleAcesso/Config.h
 *.zip
 .venv/
 work/
+
+firmware/MegaControlador/Config.h
+firmware/Esp32CamRede/Config.h
+*.hex
+*.map
+*.sqlite3-journal

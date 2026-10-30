@@ -1,6 +1,6 @@
 #include <cassert>
 #include <iostream>
-#include "../firmware/ControleAcesso/DoorLogic.h"
+#include "../firmware/MegaControlador/DoorLogic.h"
 
 int main() {
   const uint32_t minute = 60000, fiveMinutes = 300000;

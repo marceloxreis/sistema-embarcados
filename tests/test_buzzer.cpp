@@ -1,6 +1,6 @@
 #include <cassert>
 #include <iostream>
-#include "../firmware/ControleAcesso/BuzzerLogic.h"
+#include "../firmware/MegaControlador/BuzzerLogic.h"
 
 int main() {
   DoorLogic door;

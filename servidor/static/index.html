@@ -20,14 +20,16 @@
     <div id="dashboard" hidden>
       <div class="toolbar"><p id="updated">Aguardando consulta</p><div><button id="refresh" class="secondary">Atualizar</button><button id="logout" class="secondary">Sair</button></div></div>
       <div class="metrics">
-        <section class="card"><span class="eyebrow">DISPOSITIVO</span><h2 id="device-status">Sem conexão registrada</h2><p id="device-detail">Conecte o ESP32 para receber dados.</p></section>
+        <section class="card"><span class="eyebrow">DISPOSITIVO</span><h2 id="device-status">Sem conexão registrada</h2><p id="device-detail">Conecte o ESP32 para receber dados.</p><p id="device-counters" class="small" hidden></p><p id="device-photo-loss" class="small" hidden></p><p id="device-loss" class="error" role="alert" hidden></p></section>
         <section class="card"><span class="eyebrow">CADASTROS RECEBIDOS</span><h2 id="user-count">0 / 100</h2><p id="active-count">Nenhum cadastro recebido.</p></section>
         <section class="card"><span class="eyebrow">FILA DE ENVIO</span><h2 id="queued">—</h2><p>Última quantidade informada pelo ESP32.</p></section>
       </div>
       <section class="card">
         <div class="section-title"><div><span class="eyebrow">AUDITORIA</span><h2>Últimos eventos</h2></div><label class="filter">Filtrar por ID<input id="filter-id" type="number" min="1" max="100" placeholder="Todos"></label></div>
         <p>Horário local do navegador. Eventos sem sincronização mostram sessão e tempo ligado.</p>
-        <div class="table-wrap"><table><thead><tr><th>Quando</th><th>ID</th><th>Evento</th><th>Método</th><th>Detalhe</th></tr></thead><tbody id="events"></tbody></table></div>
+        <div id="photo-view" hidden><p id="photo-label" tabindex="-1"></p><p class="small">A associação da foto ao evento e seu horário não têm precisão garantida.</p><img id="photo-image" class="event-photo" alt=""><p><button id="photo-close" class="secondary" type="button">Fechar foto</button></p></div>
+        <p class="small scroll-hint">Deslize a tabela para o lado para ver todos os detalhes e as fotos.</p>
+        <div class="table-wrap" role="region" aria-label="Tabela de auditoria, rolável horizontalmente" tabindex="0"><table><thead><tr><th>Quando</th><th>ID</th><th>Evento</th><th>Método</th><th>Detalhe</th><th>Foto</th></tr></thead><tbody id="events"></tbody></table></div>
         <p class="small">Até 200 eventos por consulta. O filtro busca o ID em todo o histórico recebido no SQLite.</p>
       </section>
       <div class="two-columns">
