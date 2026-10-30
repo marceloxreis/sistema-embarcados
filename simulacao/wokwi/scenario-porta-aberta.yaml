@@ -1,0 +1,13 @@
+name: Boot com porta aberta (forced_open)
+version: 1
+author: controle-acesso-esp32
+steps:
+  # Usar com diagram-porta-aberta.json (D30 sem ligação ao switch (pull-up interna = HIGH = porta aberta)).
+  - wait-serial: "BOOT boot="
+  # PIN do Config.example.h (ADMIN_PIN), so para simulacao.
+  - write-serial: "AUTH 0000000000\n"
+  - wait-serial: "OK authenticated"
+  - write-serial: "STATUS\n"
+  # setup() grava device_boot e, com a porta aberta no boot, audit("forced_open") (firmware l.759).
+  # Sem CAM nao ha ACK, entao a fila tem 2 eventos.
+  - wait-serial: "queued=2"

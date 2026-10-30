@@ -9,7 +9,7 @@ Níveis de evidência:
 
 - **verificado em host**: executado no computador de desenvolvimento, com resultado observado.
 - **compilado**: compilado para a placa-alvo com o core indicado; não gravado nem executado.
-- **simulado**: executado em simulador (simavr, navegador dublado etc.); não é confirmação física.
+- **simulado**: executado em simulador (simavr, Wokwi, navegador dublado etc.); não é confirmação física.
 - **análise de código**: conclusão tirada da leitura do código; não foi executada.
 - **estimativa**: valor calculado a partir de dados de ficha; não medido.
 - **não verificado**: não medido nem executado; ou não verificado após mudanças.
@@ -35,6 +35,13 @@ Níveis de evidência:
 | Tempos do Mega, simavr | 30/10/2026 | Imagem `controle-acesso-avr-sim:local`. EEPROM carregada pela seção `.eeprom` do ELF (`-ee` não carregou). Tempos são `micros()` simulados, medidos em cópia instrumentada do HEAD `2c9aa85` (build de 41804 B), não no `.ino` atual; BUTTON_1/2 forçados a LOW | Boot 3,10 s com 0 cadastros e 3,13 s com 100 (quase tudo é a espera pelo DY50 ausente). SHA-256 ~11 ms por hash. Verificação de senha contra 100 registros (`ownerOfPin`/`matches`) ~1,14–1,17 s, com o Mega parado para LCD, teclado e DY50. `saveRecord` 9 ms: artefato, pois o simavr não modela a escrita da EEPROM. Tempo real estimado ~160 ms por `saveRecord` (~48 gravações; ~3,3 ms por byte é valor de datasheet lembrado pelo revisor, não conferido nesta sessão) | simulado; estimativa (o tempo real de escrita não foi verificado) |
 | UART da CAM durante o hash | 30/10/2026 | Análise de código: a UART é atendida entre hashes | Margem de ~20 B no buffer de 64 B a 38400 baud. Não medida; a imagem simavr não tem os headers do libsimavr | análise de código; não verificado |
 | Painel (`servidor/static`) | 30/10/2026 | Chrome local: 390 px após as correções; 1280 px só na verificação inicial A1, antes das correções. Teclado físico e leitor de tela não verificados (foco testado com `.focus()`/`.click()` por script). Foco preservado ao redesenhar a tabela e ao fechar a foto; resultado do reset em `#reset-status` (some em 15 s ou ao digitar); "PIN incorreto." no login, com campo limpo; `aria-label` distinto em "Ver foto" | Comportamento observado conforme descrito. Fluxo de foto testado no navegador: evento `access_granted` com foto enviada por script pela API do dispositivo; painel mostra o evento e a foto visível (320x240), na verificação A1 e reconfirmado na revisão das mudanças do painel. CAM real não testada | verificado em host (navegador local) |
+| Firmware Mega 2560 para Wokwi | 30/10/2026 | `simulacao/wokwi/build.sh`, com `Config.example.h` como `Config.h` na cópia. O firmware compilado é enviado à nuvem do Wokwi na simulação | Flash 42496 bytes; SRAM global 4581 bytes; 19 avisos | compilado |
+| Wokwi: boot com porta fechada | 30/10/2026 | `wokwi-cli` 0.29.1, diagrama `simulacao/wokwi/diagram.json`, cenário `scenario-boot.yaml` | Serial: `BOOT boot=1 storage=ok lcd=ok dy50=indisponivel lock_mode=0`, `OK authenticated`, `last_id=0 queued=1`. Passou. Confirmados: EEPROM inicia; AUTH e STATUS pela USB; leitura do sensor de porta (D30) | simulado (Wokwi) |
+| Wokwi: boot com porta aberta | 30/10/2026 | Cenário `scenario-porta-aberta.yaml` (D30 desligado, só pull-up) | `queued=2` (eventos `device_boot` e `forced_open`). Passou | simulado (Wokwi) |
+| Wokwi: LCD I2C | 30/10/2026 | Captura de tela a 5 s, em execução sem cenário (`--timeout 6000 --timeout-exit-code 0 --screenshot-time 5000`) | LCD em 0x27, pinos D20/D21, texto correto: "Senha ou digital" / "DY50 fora do ar" | simulado (Wokwi) |
+| Wokwi: teclado, LED RGB, buzzer e saída da fechadura | 30/10/2026 | Ligados no diagrama (teclado D22 a D29; LED RGB D32/D33/D34; buzzer direto em D36, sem o transistor NPN do real; LED no D35 representando a entrada do driver da fechadura). Sem cenário | Não exercitados | não verificado |
+| Wokwi: DY50 e ESP32-CAM | 30/10/2026 | Ausentes no diagrama. O Wokwi não suporta duas placas programáveis no mesmo diagrama (documentação oficial) | Não simulados. A ligação Mega-CAM segue coberta só pela simulação integrada em host (`tests/test_integrated_simulation.py`) e pela bancada | não verificado (no Wokwi) |
+| Co-simulação Mega (simavr) + ESP32 (QEMU) | 30/10/2026 | Estudada, não executada | Viável com ressalvas, 2 a 4 dias; sem Wi-Fi, câmera e periféricos no QEMU. Ganho pequeno frente à simulação integrada existente. Decisão do dono: não fazer agora | não se aplica (não executada) |
 | Ensaios físicos | - | - | Nenhum executado | - |
 
 Textos do LCD alterados (MEGA-07). Antigo -> novo, conforme `firmware/MegaControlador/MegaControlador.ino`:
@@ -72,6 +79,8 @@ CLI não executa. Para compilar, usou-se um ctags ARM64 indicado pela propriedad
   compiladores e níveis de aviso diferentes. Não são comparáveis entre si.
 - Método da sessão 2: passos em `docs/HANDOFF.md`, seção 6. Os scripts ficaram
   numa pasta temporária fora do repositório; não estão versionados.
+- O build do Mega para o Wokwi é outro método, versionado em
+  `simulacao/wokwi/build.sh`.
 - Correção: um script usado no início da sessão 2 compilou com `-w`, que suprime
   avisos. Relatos de "sem avisos" daquele script não valem. A medição de 19
   avisos foi feita com `-Wall -Wextra`.
@@ -98,3 +107,11 @@ CLI não executa. Para compilar, usou-se um ctags ARM64 indicado pela propriedad
   compilada a partir do `.ino`, não com LCD físico. O boot sem LCD é simulado
   (simavr). LCD real: não verificado.
 - Tempos de resposta, entropia e pico de pilha/heap não foram medidos.
+- Wokwi: simulação na nuvem do Wokwi. Não mede temporização, níveis elétricos nem
+  I²C/UART reais. Diferenças em relação à montagem real: buzzer direto no D36 (no
+  real há transistor NPN); LED no D35 no lugar do driver da fechadura; DY50 e CAM
+  ausentes. A fiação foi conferida por revisão de código contra `Config.example.h`,
+  `docs/MONTAGEM.md` e o `.ino`, sem divergências. Não executada na simulação:
+  teclado, LED RGB, buzzer e fechadura.
+- Plano gratuito do Wokwi: 50 min/mês, sessões até 5 min. Consumo aproximado nesta
+  sessão: ~8 min.

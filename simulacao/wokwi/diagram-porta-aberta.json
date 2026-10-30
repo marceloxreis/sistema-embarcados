@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "author": "controle-acesso-esp32",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-mega",
+      "id": "mega",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd1",
+      "top": -120,
+      "left": 360,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x27"
+      }
+    },
+    {
+      "type": "wokwi-membrane-keypad",
+      "id": "keypad1",
+      "top": 300,
+      "left": 400,
+      "attrs": {
+        "keys": [
+          "1",
+          "2",
+          "3",
+          "A",
+          "4",
+          "5",
+          "6",
+          "B",
+          "7",
+          "8",
+          "9",
+          "C",
+          "*",
+          "0",
+          "#",
+          "D"
+        ]
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb1",
+      "top": -60,
+      "left": 520,
+      "attrs": {
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -20,
+      "left": 470,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 0,
+      "left": 470,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 20,
+      "left": 470,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buz1",
+      "top": 180,
+      "left": 560,
+      "attrs": {
+        "volume": "0.5"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": 240,
+      "left": 620,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r4",
+      "top": 240,
+      "left": 540,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw1",
+      "top": -200,
+      "left": 560,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw2",
+      "top": -140,
+      "left": 560,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "mega:20",
+      "lcd1:SDA",
+      "blue",
+      []
+    ],
+    [
+      "mega:21",
+      "lcd1:SCL",
+      "green",
+      []
+    ],
+    [
+      "mega:5V",
+      "lcd1:VCC",
+      "red",
+      []
+    ],
+    [
+      "mega:GND.1",
+      "lcd1:GND",
+      "black",
+      []
+    ],
+    [
+      "mega:22",
+      "keypad1:R1",
+      "green",
+      []
+    ],
+    [
+      "mega:23",
+      "keypad1:R2",
+      "green",
+      []
+    ],
+    [
+      "mega:24",
+      "keypad1:R3",
+      "green",
+      []
+    ],
+    [
+      "mega:25",
+      "keypad1:R4",
+      "green",
+      []
+    ],
+    [
+      "mega:26",
+      "keypad1:C1",
+      "blue",
+      []
+    ],
+    [
+      "mega:27",
+      "keypad1:C2",
+      "blue",
+      []
+    ],
+    [
+      "mega:28",
+      "keypad1:C3",
+      "blue",
+      []
+    ],
+    [
+      "mega:29",
+      "keypad1:C4",
+      "blue",
+      []
+    ],
+    [
+      "mega:32",
+      "r1:1",
+      "red",
+      []
+    ],
+    [
+      "r1:2",
+      "rgb1:R",
+      "red",
+      []
+    ],
+    [
+      "mega:33",
+      "r2:1",
+      "green",
+      []
+    ],
+    [
+      "r2:2",
+      "rgb1:G",
+      "green",
+      []
+    ],
+    [
+      "mega:34",
+      "r3:1",
+      "blue",
+      []
+    ],
+    [
+      "r3:2",
+      "rgb1:B",
+      "blue",
+      []
+    ],
+    [
+      "rgb1:COM",
+      "mega:GND.2",
+      "black",
+      []
+    ],
+    [
+      "mega:36",
+      "buz1:2",
+      "orange",
+      []
+    ],
+    [
+      "mega:GND.3",
+      "buz1:1",
+      "black",
+      []
+    ],
+    [
+      "mega:35",
+      "r4:1",
+      "magenta",
+      []
+    ],
+    [
+      "r4:2",
+      "led1:A",
+      "magenta",
+      []
+    ],
+    [
+      "led1:C",
+      "mega:GND.4",
+      "black",
+      []
+    ],
+    [
+      "sw1:1",
+      "mega:GND.5",
+      "black",
+      []
+    ],
+    [
+      "sw2:1",
+      "mega:GND.5",
+      "black",
+      []
+    ],
+    [
+      "sw2:2",
+      "mega:31",
+      "gray",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "display": "terminal",
+    "newline": "lf"
+  }
+}

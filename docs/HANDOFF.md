@@ -197,7 +197,8 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
   Adafruit_Fingerprint, Crypto (SHA256, Hash, Crypto) e SoftwareSerial. Link com
   `-Os -flto -Wl,--gc-sections -lm`. Tamanho por `avr-size` (flash = .text + .data;
   SRAM = .data + .bss). Não é o arduino-cli.
-  Scripts atuais (pasta temporária, não versionada):
+  Scripts de simavr e o `build_in_docker.sh` acima (pasta temporária, não versionada;
+  o build do Mega para o Wokwi é outro, em `simulacao/wokwi/build.sh`):
   `/private/tmp/claude-501/-Users-marceloreis/f04675c4-326a-41f8-a313-d6d37b520e19/scratchpad/a2-simavr/scripts/`
   (`build_in_docker.sh`, `make_instr.py`, `gen_eeprom.py`, `make_elf_eep.sh`,
   `run_sims.sh`, `parse_out.py`) e `.../scratchpad/b7/` (`build.log`). Recomenda-se,
@@ -213,15 +214,26 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
   `/tmp/controle-test-libs-20261029` sumir, regenere com esse script.
 - Os testes C++ recortam trechos do `.ino` por marcadores de texto. Se mudar
   assinatura ou marcador, confira `tests/` antes.
+- Simulação Wokwi: `simulacao/wokwi/` (`diagram.json`, `diagram-porta-aberta.json`,
+  `wokwi.toml`, `build.sh`, `scenario-boot.yaml`, `scenario-porta-aberta.yaml`,
+  `LEIAME.md`). `build.sh` compila o Mega com `Config.example.h` e é o método de
+  build do Wokwi, versionado nesse script. `build/` é ignorado pelo Git.
+- `wokwi-cli` 0.29.1 em `~/.wokwi/bin`. O token fica no Keychain do Mac (item
+  `wokwi-cli-token`), nunca em arquivo. Não ler nem exibir o token.
+- Uso do `wokwi-cli`: plano gratuito, 50 min/mês, sessões até 5 min. Captura
+  (`--screenshot-*`) só numa execução sem cenário, com `--timeout 6000
+  --timeout-exit-code 0 --screenshot-time 5000`; junto com cenário, a sessão ficou
+  aberta até o limite de 5 min. O atributo `value` do `wokwi-slide-switch` não
+  existe (o CLI avisa), e a chave não tem controle documentado para `set-control`.
 
 ## 7. Pendências abertas (priorizadas)
 
 Fechadas na sessão 2 (ver seção 4): MEGA-03, MEGA-04, REQ-E4, TST-02 e MEGA-07.
 
+Descartados pelo dono (30/10/2026): CAM-03 (campo `camera_ready` no heartbeat da
+CAM), SRV-02 (índice em `events(received_at)` e política de retenção do banco).
+
 P2:
-- CAM-03: falha da câmera não chega ao servidor; acrescentar campo
-  `camera_ready` ao heartbeat (CAM + `server.py` + painel).
-- SRV-02: banco sem índice em `events(received_at)` e sem política de retenção.
 - Verificação de senha bloqueia o Mega ~1,17 s com 100 cadastros (simulado,
   simavr): LCD, teclado e DY50 param nesse intervalo. Decidir se vale a pena
   uma verificação incremental. Margem da UART da CAM durante o hash: ~20 B no
@@ -286,10 +298,20 @@ física). Números em docs/VALIDACAO.md.
   mostra o evento e a foto visível (320x240), na verificação A1 e reconfirmado
   na revisão das mudanças do painel (verificado em host, navegador local).
 
+- Wokwi (simulado, na nuvem do Wokwi; `simulacao/wokwi/`): Mega com LCD I2C,
+  EEPROM, USB e leitura da porta (D30) em dois cenários. Boot com porta fechada:
+  `queued=1`. Boot com porta aberta: `queued=2` (device_boot e forced_open). Captura
+  do LCD: "Senha ou digital" / "DY50 fora do ar". Não exercitados: teclado, LED RGB,
+  buzzer e saída da fechadura (ligados no diagrama, sem cenário). DY50 e ESP32-CAM
+  ausentes; o Wokwi não aceita duas placas programáveis no mesmo diagrama. Números
+  em docs/VALIDACAO.md.
+
 Pendente:
-- Wokwi (Mega + ESP32 por UART, LCD I2C, teclado, LEDs, buzzer, botões; sem
-  câmera e sem DY50): teste integrado mais próximo do real. Requer conta e
-  token do Wokwi CLI (serviço externo; pedir autorização ao dono).
+- Wokwi: cenários para teclado, LED RGB e buzzer, se útil. DY50 e ESP32-CAM seguem
+  fora da simulação.
+- Co-simulação Mega (simavr) + ESP32 (QEMU da Espressif): estudada e não feita.
+  Viável com ressalvas, 2 a 4 dias; sem Wi-Fi, câmera e periféricos no QEMU; ganho
+  pequeno frente à simulação integrada existente. Decisão do dono: não fazer agora.
 - simavr: tempo real de escrita na EEPROM (o simavr não modela; o valor de 9 ms
   do `saveRecord` é artefato, e o tempo real estimado é ~160 ms, estimativa:
   ~48 gravações por `saveRecord`, com ~3,3 ms por byte, valor de datasheet
@@ -303,12 +325,13 @@ Pendente:
 
 ## 9. Próximo passo exato
 
-Ordem sugerida antes da bancada:
-1. CAM-03 e SRV-02.
-2. P2 de verificação de senha: decidir se faz verificação incremental.
-3. Wokwi, se o dono autorizar.
+Ordem sugerida:
+1. Bancada, passo 3 de `docs/MONTAGEM.md` (Mega sozinho pelo USB), quando o dono
+   estiver com a placa. O adaptador da ESP32-CAM ainda não chegou.
+2. Cenários Wokwi para teclado, LED RGB e buzzer, se útil.
+3. P2 de verificação de senha: decidir se faz verificação incremental.
 
-Depois, a bancada conforme o roteiro existente:
+Depois, o roteiro de bancada existente:
 1. Configuração local, sem versionar:
    - `ADMIN_PIN` (10 dígitos) em `firmware/MegaControlador/Config.h`, arquivo
      ignorado pelo Git.
@@ -319,4 +342,4 @@ Depois, a bancada conforme o roteiro existente:
 3. Depois: `docs/TESTES.md`, "Ensaios funcionais de bancada".
 4. Só então o ensaio da fechadura (`docs/MONTAGEM.md` seção 6).
 
-Nada disso foi executado. A bancada depende do dono e do hardware.
+Ensaios físicos: nenhum executado. A bancada depende do dono e do hardware.

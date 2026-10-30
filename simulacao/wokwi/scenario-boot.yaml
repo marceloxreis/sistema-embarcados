@@ -1,0 +1,13 @@
+name: Boot e autenticacao do MegaControlador
+version: 1
+author: controle-acesso-esp32
+steps:
+  # Espera a linha de diagnostico de boot (setup()).
+  - wait-serial: "BOOT boot="
+  # PIN do Config.example.h (ADMIN_PIN), so para simulacao.
+  - write-serial: "AUTH 0000000000\n"
+  - wait-serial: "OK authenticated"
+  - write-serial: "STATUS\n"
+  # Porta fechada no boot (sw1 e sw2 na posicao esquerda, LOW): so device_boot entra na fila.
+  # Sem CAM nao ha ACK, entao queued=1 e o valor esperado.
+  - wait-serial: "queued=1"
