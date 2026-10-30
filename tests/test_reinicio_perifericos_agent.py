@@ -27,9 +27,10 @@ struct FakeWire {
  uint8_t endTransmission() { if (busBroken) { failed=true; return 5; } return lcdPresent ? 0 : 2; }
 } Wire;
 struct FakeLCD {
- int inits=0, backlights=0, writes=0, cursors=0; bool failOnWrite=false;
+ int inits=0, backlights=0, writes=0, cursors=0, prints=0; bool failOnWrite=false;
  void init() { ++inits; if (Wire.busBroken) Wire.failed=true; }
  void backlight() { ++backlights; }
+ void print(const char *) { ++prints; }
  void setCursor(int,int) { ++cursors; }
  void write(uint8_t) { ++writes; if (failOnWrite) Wire.failed=true; }
 } lcd;
@@ -105,6 +106,43 @@ int main() {
  // Presença voltou, mas a janela de 30 s recomeçou na tentativa anterior
  Wire.lcdPresent=true; now+=10000; lcdRecoveryTick(); assert(!lcdReady && Wire.probes==1);
  now+=20000; lcdRecoveryTick(); assert(lcdReady && Wire.probes==2 && lcd.inits==1);
+ return 0;
+}
+'''
+        self._compile_and_run(self._sketch_body(), cases)
+
+    def test_boot_lcd_ausente_nao_e_inicializado(self):
+        cases = r'''
+int main() {
+ door.begin(true,now); resetUi(); noticeDuration=0;
+ // Boot com LCD ausente (NACK): sonda falha, init/backlight/print não são chamados
+ Wire.lcdPresent=false; lcdBoot();
+ assert(!lcdReady && Wire.probes==1 && lcd.inits==0 && lcd.backlights==0 && lcd.prints==0);
+ // LCD aparece depois: a recuperação religa na janela de 30 s
+ Wire.lcdPresent=true; now+=30000; lcdRecoveryTick();
+ assert(lcdReady && lcd.inits==1);
+ return 0;
+}
+'''
+        self._compile_and_run(self._sketch_body(), cases)
+
+    def test_boot_lcd_presente_inicializa(self):
+        cases = r'''
+int main() {
+ door.begin(true,now); resetUi(); noticeDuration=0;
+ Wire.lcdPresent=true; lcdBoot();
+ assert(lcdReady && Wire.probes==1 && lcd.inits==1 && lcd.backlights==1 && lcd.prints==1);
+ return 0;
+}
+'''
+        self._compile_and_run(self._sketch_body(), cases)
+
+    def test_boot_com_timeout_fica_sem_lcd(self):
+        cases = r'''
+int main() {
+ door.begin(true,now); resetUi(); noticeDuration=0;
+ Wire.busBroken=true; lcdBoot();
+ assert(!lcdReady && Wire.probes==1 && lcd.inits==0 && lcd.prints==0);
  return 0;
 }
 '''

@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-let adminPin = '', overview = null, timer = null, filterTimer = null, loading = false, photoUrl = null, lastSnapshot = '', noticeUntil = 0, messageSource = 'other', sessionId = 0;
+let adminPin = '', overview = null, timer = null, filterTimer = null, loading = false, photoUrl = null, lastSnapshot = '', messageSource = 'other', sessionId = 0, photoEventId = '', resetTimer = null;
 const labels = {
   device_boot:'Inicialização',storage_error:'Erro de armazenamento',user_enrolled:'Pessoa cadastrada',
   user_disabled:'Pessoa desativada',user_enabled:'Pessoa reativada',password_reset:'Senha redefinida',
@@ -23,8 +23,13 @@ async function api(path,body){
 }
 function cell(row,text){ const td=document.createElement('td'); td.textContent=text; row.append(td); }
 function closePhoto(){ $('photo-view').hidden=true; $('photo-image').removeAttribute('src'); if(photoUrl) URL.revokeObjectURL(photoUrl); photoUrl=null; }
+function clearResetStatus(){ clearTimeout(resetTimer); resetTimer=null; $('reset-status').textContent=''; }
+function resetStatus(text,error=false){ clearResetStatus(); $('reset-status').textContent=text; $('reset-status').className=error?'error':'success'; resetTimer=setTimeout(clearResetStatus,15000); }
+function focusEvent(id){ const button=[...$('events').querySelectorAll('button')].find(b=>b.dataset.eventId===id); if(button) button.focus(); return !!button; }
 function renderEvents(){
-  const events=overview.events;
+  const events=overview.events, active=document.activeElement;
+  // Guarda o foco só se estiver num botão "Ver foto" da tabela; o redesenho o destrói.
+  const focusedId=active&&active.dataset&&active.dataset.eventId&&$('events').contains(active)?active.dataset.eventId:'';
   $('events').replaceChildren();
   for(const e of events){
     const tr=document.createElement('tr');
@@ -33,6 +38,7 @@ function renderEvents(){
     const photoCell=document.createElement('td');
     if(e.has_photo){
       const button=document.createElement('button'); button.type='button';button.textContent='Ver foto';
+      button.dataset.eventId=String(e.event_id);button.setAttribute('aria-label',`Ver foto${e.user_id?` do ${idLabel(e.user_id)}`:''}, ${when}`);
       button.addEventListener('click',async()=>{
         button.disabled=true;
         const sessionPin=adminPin;
@@ -42,7 +48,7 @@ function renderEvents(){
           const blob=await response.blob(); if(!sessionPin || sessionPin!==adminPin) return;
           closePhoto(); photoUrl=URL.createObjectURL(blob); $('photo-image').src=photoUrl;
           $('photo-image').alt=`Foto do ${idLabel(e.user_id)}`; $('photo-label').textContent=`Foto do ${idLabel(e.user_id)} · ${when}`;
-          $('photo-view').hidden=false;
+          $('photo-view').hidden=false; photoEventId=button.dataset.eventId;
           $('photo-label').scrollIntoView({block:'nearest'}); $('photo-label').focus();
         }catch(error){message(error.message,true);}
         finally{button.disabled=false;}
@@ -53,6 +59,7 @@ function renderEvents(){
     $('events').append(tr);
   }
   if(!events.length){ const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.textContent='Nenhum evento recebido para este filtro.';tr.append(td);$('events').append(tr); }
+  if(focusedId) focusEvent(focusedId); // se o botão sumiu, o foco não é roubado
 }
 function render(){
   const device=overview.devices[0];
@@ -115,8 +122,8 @@ async function refresh(){
       const device=data.devices[0], snapshot=JSON.stringify({...data,server_time:0,fresh:device?data.server_time-device.seen_at<30:null});
       overview=data;
       if(snapshot!==lastSnapshot){lastSnapshot=snapshot;render();}else $('updated').textContent=`Consulta: ${dateLabel(data.server_time)}`;
-      // Limpa só o aviso deste próprio refresh ou a confirmação do reset já expirada; erros de outras ações ficam até a próxima ação.
-      if(messageSource==='refresh'||(messageSource==='notice'&&Date.now()>=noticeUntil)) message('');
+      // Limpa só o aviso deste próprio refresh; erros de outras ações ficam até a próxima ação.
+      if(messageSource==='refresh') message('');
     }
   }
   catch(e){
@@ -131,22 +138,28 @@ $('login-form').addEventListener('submit',async e=>{
   e.preventDefault();adminPin=$('admin-pin').value;
   const button=e.target.querySelector('button');button.disabled=true;
   try{overview=await api('/api/admin/overview');$('login').hidden=true;$('dashboard').hidden=false;$('admin-pin').value='';message('');render();timer=setInterval(()=>{if(!document.hidden)refresh();},5000);$('refresh').focus();}
-  catch(error){adminPin='';message(error.message,true);}
+  catch(error){
+    adminPin='';
+    if(error.status===401){$('admin-pin').value='';$('admin-pin').focus();message('PIN incorreto.',true);} // o botão desabilitado pode ter levado o foco
+    else message(error.message,true);
+  }
   finally{button.disabled=false;}
 });
-function logout(text='Sessão encerrada.',error=false){clearInterval(timer);clearTimeout(filterTimer);sessionId++;adminPin='';overview=null;lastSnapshot='';noticeUntil=0;closePhoto();$('reset-form').reset();$('filter-id').value='';$('dashboard').hidden=true;$('login').hidden=false;message(text,error);$('admin-pin').focus();}
+function logout(text='Sessão encerrada.',error=false){clearInterval(timer);clearTimeout(filterTimer);sessionId++;adminPin='';overview=null;lastSnapshot='';closePhoto();$('reset-form').reset();clearResetStatus();$('filter-id').value='';$('dashboard').hidden=true;$('login').hidden=false;message(text,error);$('admin-pin').focus();}
 $('logout').addEventListener('click',()=>logout());
 $('user-id').addEventListener('blur',()=>{if(overview)render();});
-$('photo-close').addEventListener('click',closePhoto);
+$('photo-close').addEventListener('click',()=>{const id=photoEventId;closePhoto();if(!focusEvent(id)) $('events').closest('.table-wrap').focus();});
 $('refresh').addEventListener('click',refresh);
 $('filter-id').addEventListener('input',()=>{clearTimeout(filterTimer);filterTimer=setTimeout(refresh,250);});
+$('reset-form').addEventListener('input',clearResetStatus);$('reset-form').addEventListener('change',clearResetStatus);
 $('reset-form').addEventListener('submit',async e=>{
   e.preventDefault();const pin=$('new-pin').value,confirmation=$('confirm-pin').value;
-  if(pin!==confirmation){message('As duas senhas devem ser iguais.',true);$('confirm-pin').focus();return;}
+  // Resultado do reset fica perto do formulário (no celular o aviso do topo fica fora da tela).
+  if(pin!==confirmation){resetStatus('As duas senhas devem ser iguais.',true);$('confirm-pin').focus();return;}
   const user=overview.users.find(u=>u.user_id===Number($('user-id').value));
-  if(!user){message('Selecione um ID válido.',true);$('user-id').focus();return;}
+  if(!user){resetStatus('Selecione um ID válido.',true);$('user-id').focus();return;}
   const button=e.target.querySelector('button');button.disabled=true;
-  try{await api('/api/admin/reset',{device:user.device,user_id:user.user_id,pin,confirmation});$('new-pin').value='';$('confirm-pin').value='';noticeUntil=Date.now()+15000;message('Solicitação pendente. Aguarde a confirmação do ESP32 em “Alterações de senha”.',false,'notice');await refresh();}
-  catch(error){message(error.message,true);}
+  try{await api('/api/admin/reset',{device:user.device,user_id:user.user_id,pin,confirmation});$('new-pin').value='';$('confirm-pin').value='';resetStatus('Solicitação pendente. Aguarde a confirmação do ESP32 em “Alterações de senha”.');await refresh();}
+  catch(error){resetStatus(error.message,true);}
   finally{button.disabled=false;}
 });

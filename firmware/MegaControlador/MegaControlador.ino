@@ -70,6 +70,8 @@ void queueEvent(const char *, uint16_t, const char *, const char *);
 enum class Ui { Access, Menu, FirstFinger, RemoveFinger, SecondFinger,
                 FirstPin, ConfirmPin, DisableId, EnableId, ConfirmStatus };
 Ui ui = Ui::Access;
+// B4: falhas seguidas de getImage durante o cadastro; só a 4a aborta (PACKETRECIEVEERR aborta já).
+uint8_t enrollReadFails = 0;
 String entry, firstPin;
 uint32_t entryTouched = 0;
 uint16_t pendingId = 0;
@@ -163,12 +165,13 @@ void notice(const String &a, const String &b, bool error = false, uint32_t durat
 bool noticeActive() { return uint32_t(millis() - noticeSince) < noticeDuration; }
 String idText(uint16_t id) { char b[12]; snprintf(b, sizeof(b), "ID %03u", id); return String(b); }
 void resetUi() {
-  ui = Ui::Access; entry = ""; firstPin = ""; pendingId = 0;
+  ui = Ui::Access; entry = ""; firstPin = ""; pendingId = 0; enrollReadFails = 0;
   uiTouched = millis();
 }
-void failEnrollment(const char *message) {
+// message é o código de auditoria (reasonNames, usado pela CAM e pelo servidor); lcdLine é só o texto do LCD, até 16 colunas.
+void failEnrollment(const char *message, const char *lcdLine) {
   audit("enroll_failed", 0, "admin", message);
-  resetUi(); notice("Cadastro falhou", message, true);
+  resetUi(); notice("Cadastro falhou", lcdLine, true);
 }
 bool changeStatus(uint16_t id, bool enabled) {
   if (!exists(id)) return false;
@@ -177,10 +180,11 @@ bool changeStatus(uint16_t id, bool enabled) {
   audit(enabled ? "user_enabled" : "user_disabled", id, "admin"); return true;
 }
 const char *resetPassword(uint16_t id, const String &pin, const char *source, uint64_t token) {
-  if (!exists(id)) return "unknown_user";
+  // Registro corrompido também dá false, mas readRecord já marcou storageReady=false: é erro de armazenamento.
   // Salvo no MESMO registro que o hash: reenvio após reboot só confirma a aplicação.
   // Reset USB copia/preserva esse token, impedindo reaplicar comando web antigo.
-  UserRecord current; if (!readRecord(id, current)) return "storage_error";
+  const bool storageOk = storageReady;
+  UserRecord current; if (!readRecord(id, current)) return (storageOk && !storageReady) ? "storage_error" : "unknown_user";
   if (token && current.lastWebToken == token) return "ok";
   if (ui != Ui::Access || door.state != DoorState::Idle || !door.closed) return "device_busy";
   if (!validPin(pin, 6)) return "invalid_pin";
@@ -196,13 +200,20 @@ const char *resetPassword(uint16_t id, const String &pin, const char *source, ui
   return "ok";
 }
 void authorize(uint16_t id, const char *method) {
-  if (!storageReady || !exists(id) || !activeUser(id)) {
+  // Uma única leitura: registro corrompido derruba storageReady e vira falha de memória, não "inativo".
+  UserRecord record;
+  const bool found = storageReady && readRecord(id, record);
+  if (!storageReady) {
+    notice("Falha memoria", "Acesso negado", true);
+    audit("access_denied", id, method, "Erro na memoria"); return;
+  }
+  if (!found || !record.active) {
     notice("Acesso negado", "Cadastro inativo", true);
     audit("access_denied", id, method, "inactive_or_unknown"); return;
   }
   const uint32_t authorizedAt = millis();
   if (!door.authorize(id, authorizedAt)) {
-    notice("Aguarde", "Ciclo em andamento"); return;
+    notice("Aguarde", "Ciclo em curso"); return;
   }
   authorizationAt = authorizedAt; accessMethod = method;
   buzzer.reset();
@@ -213,19 +224,21 @@ void authorize(uint16_t id, const char *method) {
 }
 
 void beginEnrollment() {
-  if (!storageReady || !fingerprintReady) { notice("Indisponivel", "Verifique DY50/NVS", true); return; }
-  if (lastId >= MAX_USERS) { notice("Limite atingido", "100 IDs utilizados", true); return; }
+  if (!storageReady || !fingerprintReady) { notice("Indisponivel", "Veja DY50/EEPROM", true); return; }
+  if (lastId >= MAX_USERS) { notice("Limite atingido", "100 IDs em uso", true); return; }
   pendingId = lastId + 1;
-  firstPin = ""; entry = "";
+  firstPin = ""; entry = ""; enrollReadFails = 0;
   // Exigir área livre antes da primeira captura, inclusive se o dedo ficou no leitor.
   ui = Ui::RemoveFinger; enableRequested = false;
 }
 void confirmEnrollment() {
   if (entry != firstPin) {
     firstPin = ""; entry = ""; ui = Ui::FirstPin;
-    notice("Senhas diferentes", "Digite novamente", true); return;
+    notice("Senhas nao batem", "Digite novamente", true); return;
   }
   uint16_t owner = ownerOfPin(entry);
+  // Erro de armazenamento encerra o cadastro com aviso. Abertura da porta (MAX_USERS+1) já é mostrada pelo ciclo da porta.
+  if (owner == MAX_USERS + 2) { failEnrollment("Erro na memoria", "Erro na memoria"); return; }
   if (owner > MAX_USERS) return;
   if (owner) {
     firstPin = ""; entry = ""; ui = Ui::FirstPin;
@@ -236,7 +249,7 @@ void confirmEnrollment() {
   const uint32_t generation = doorGeneration;
   const Ui enrollmentUi = ui;
   fillSalt(record.salt, enrollmentId);
-  if (!digest(entry, record.salt, record.hash)) { failEnrollment("Erro de hash"); return; }
+  if (!digest(entry, record.salt, record.hash)) { failEnrollment("Erro de hash", "Erro de hash"); return; }
   // O DY50 recebe o modelo antes de publicar o cadastro. Modelo órfão não autoriza.
   // Próximo cadastro pode sobrescrever este slot se o NVS não foi confirmado.
   uint8_t stored = finger.storeModel(enrollmentId);
@@ -247,22 +260,22 @@ void confirmEnrollment() {
     return;
   }
   if (stored != FINGERPRINT_OK) {
-    failEnrollment("Erro ao gravar DY"); return;
+    failEnrollment("Erro ao gravar DY", "Erro gravar DY"); return;
   }
   if (!saveRecord(enrollmentId, record)) {
     if (finger.deleteModel(enrollmentId) == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
-    failEnrollment("Erro na memoria"); return;
+    failEnrollment("Erro na memoria", "Erro na memoria"); return;
   }
   const uint16_t id = enrollmentId;
   audit("user_enrolled", id, "admin"); resetUi();
   waitFingerRemoval = true;
-  if (doorGeneration == generation && door.state == DoorState::Idle) notice("Pessoa cadastrada", idText(id));
+  if (doorGeneration == generation && door.state == DoorState::Idle) notice("Cadastrado", idText(id));
 }
 void handleKey(char key) {
   if (!key || noticeActive()) return;
   uiTouched = millis();
   if (key == 'D') {
-    if (ui != Ui::Access) { resetUi(); notice("Operacao cancelada", ""); }
+    if (ui != Ui::Access) { resetUi(); notice("Cancelado", ""); }
     else if (door.state == DoorState::Idle) entry = "";
     // D cancela administração/cadastro. Não anuncia cancelamento de um acesso liberado.
     return;
@@ -283,7 +296,7 @@ void handleKey(char key) {
       bool ok = changeStatus(id, enabling);
       resetUi();
       if (generation == doorGeneration && door.state == DoorState::Idle)
-        notice(ok ? (enabling ? "Reativado" : "Desativado") : "Erro na alteracao", idText(id), !ok);
+        notice(ok ? (enabling ? "Reativado" : "Desativado") : "Falha ao alterar", idText(id), !ok);
     }
     return;
   }
@@ -301,6 +314,7 @@ void handleKey(char key) {
       } else notice("Feche a porta", "Aguarde o ciclo", true);
     } else if (validPin(entry, 6)) {
       uint16_t id = ownerOfPin(entry);
+      if (id == MAX_USERS + 2) { entry = ""; notice("Falha memoria", "Acesso negado", true); audit("access_denied", 0, "password", "Erro na memoria"); return; }
       if (id > MAX_USERS) { entry = ""; return; }
       if (id) authorize(id, "password");
       else { notice("Acesso negado", "Senha incorreta", true); audit("access_denied", 0, "password", "invalid_pin"); }
@@ -331,14 +345,19 @@ void fingerprintTick() {
   uint8_t p = finger.getImage();
   if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
   if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
+  // B4: no cadastro, falha passageira de leitura (ex.: IMAGEFAIL) tenta de novo no próximo tick.
+  // Só a 4a seguida aborta; erro de comunicação (PACKETRECIEVEERR) aborta já. OK/NOFINGER zeram.
+  const bool enrolling = ui == Ui::RemoveFinger || ui == Ui::FirstFinger || ui == Ui::SecondFinger;
+  if (p == FINGERPRINT_OK || p == FINGERPRINT_NOFINGER) enrollReadFails = 0;
+  else if (enrolling && p != FINGERPRINT_PACKETRECIEVEERR && ++enrollReadFails <= 3) return;
   if (ui == Ui::RemoveFinger) {
     if (p == FINGERPRINT_NOFINGER) ui = enableRequested ? Ui::SecondFinger : Ui::FirstFinger;
-    else if (p != FINGERPRINT_OK) failEnrollment("Erro de leitura");
+    else if (p != FINGERPRINT_OK) failEnrollment("Erro de leitura", "Erro de leitura");
     return;
   }
   if (p == FINGERPRINT_NOFINGER) { waitFingerRemoval = false; return; }
   if (p != FINGERPRINT_OK) {
-    if (ui != Ui::Access) failEnrollment("Erro de leitura");
+    if (ui != Ui::Access) failEnrollment("Erro de leitura", "Erro de leitura");
     else notice("Falha no leitor", "Tente novamente", true);
     return;
   }
@@ -347,7 +366,7 @@ void fingerprintTick() {
   if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
   if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
   if (p != FINGERPRINT_OK) {
-    if (ui != Ui::Access) failEnrollment("Digital ilegivel");
+    if (ui != Ui::Access) failEnrollment("Digital ilegivel", "Digital ilegivel");
     else { waitFingerRemoval = true; notice("Digital ilegivel", "Retire o dedo", true); }
     return;
   }
@@ -356,18 +375,29 @@ void fingerprintTick() {
     if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
     if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
     if (p == FINGERPRINT_OK) {
-      // Uma correspondência órfã pode ocultar outra digital existente; não
-      // presumir que a credencial seja única nem apagar modelos existentes.
-      if (exists(finger.fingerID)) failEnrollment("Digital ja usada");
-      else failEnrollment("Slot DY orfao");
+      // A EEPROM é a fonte da verdade. Modelo sem registro é lixo de um cadastro
+      // interrompido (falta de energia entre storeModel e saveRecord): apaga o
+      // slot e volta a pedir para retirar o dedo. A nova busca acha qualquer
+      // digital cadastrada que a órfã escondia ("Digital ja usada"). Cada
+      // limpeza remove um slot, então não há laço sem retirada do dedo.
+      if (exists(finger.fingerID)) { failEnrollment("Digital ja usada", "Digital ja usada"); return; }
+      if (!storageReady || finger.fingerID < 1 || finger.fingerID > MAX_USERS) {
+        failEnrollment("Slot DY orfao", "Slot DY orfao"); return;
+      }
+      p = finger.deleteModel(finger.fingerID);
+      if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
+      if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
+      if (p != FINGERPRINT_OK) { failEnrollment("Slot DY orfao", "Slot DY orfao"); return; }
+      enableRequested = false; ui = Ui::RemoveFinger; uiTouched = millis();
+      notice("Slot orfao limpo", "Recoloque o dedo");
       return;
-    } else if (p != FINGERPRINT_NOTFOUND) { failEnrollment("Falha na pesquisa"); return; }
+    } else if (p != FINGERPRINT_NOTFOUND) { failEnrollment("Falha na pesquisa", "Falha na busca"); return; }
     enableRequested = true; ui = Ui::RemoveFinger; uiTouched = millis();
   } else if (ui == Ui::SecondFinger) {
     p = finger.createModel();
     if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
     if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
-    if (p != FINGERPRINT_OK) { failEnrollment("Digitais diferem"); return; }
+    if (p != FINGERPRINT_OK) { failEnrollment("Digitais diferem", "Digitais diferem"); return; }
     ui = Ui::FirstPin; entry = ""; uiTouched = millis();
   } else {
     waitFingerRemoval = true;
@@ -376,7 +406,7 @@ void fingerprintTick() {
     if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) return;
     if (p == FINGERPRINT_OK) authorize(finger.fingerID, "fingerprint");
     else {
-      notice("Acesso negado", p == FINGERPRINT_NOTFOUND ? "Digital desconhec." : "Erro de leitura", true);
+      notice("Acesso negado", p == FINGERPRINT_NOTFOUND ? "Dig. desconhec." : "Erro de leitura", true);
       audit("access_denied", 0, "fingerprint", p == FINGERPRINT_NOTFOUND ? "unknown_finger" : "sensor_error");
     }
   }
@@ -428,6 +458,23 @@ void fingerprintRecoveryTick() {
   lastFingerRecovery = millis();
   fingerprintReady = finger.verifyPassword() && finger.getParameters() == FINGERPRINT_OK && finger.capacity > MAX_USERS;
 }
+// Sonda do LCD: LCD ausente (NACK) ou barramento com timeout resulta em false.
+bool lcdPresent() {
+  Wire.clearWireTimeoutFlag(); Wire.beginTransmission(LCD_ADDRESS);
+  return Wire.endTransmission() == 0 && !Wire.getWireTimeoutFlag();
+}
+// Boot: só inicializa o LCD se a sonda responder; ausente ou com timeout fica lcdReady=false.
+void lcdBoot() {
+  lcdReady = lcdPresent();
+  if (!lcdReady) return;
+  lcd.init();
+  if (!Wire.getWireTimeoutFlag()) lcd.backlight();
+  lcdReady = !Wire.getWireTimeoutFlag();
+  if (lcdReady) {
+    lcd.print("Iniciando...");
+    lcdReady = !Wire.getWireTimeoutFlag();
+  }
+}
 // Após timeout I2C, tenta religar o LCD a cada 30 s e força o redesenho completo.
 // lcd.init() bloqueia ~1 s: só tentar com a mesma segurança do DY50 e sem buzzer ativo.
 void lcdRecoveryTick() {
@@ -435,8 +482,7 @@ void lcdRecoveryTick() {
   if (ui != Ui::Access || door.state != DoorState::Idle || !door.closed || buzzer.isOn(millis()) || noticeActive() || entry.length()) return;
   lastLcdRecovery = millis();
   // Sonda antes do init: LCD ausente (NACK) ou barramento com timeout não conta como religado.
-  Wire.clearWireTimeoutFlag(); Wire.beginTransmission(LCD_ADDRESS);
-  const bool present = Wire.endTransmission() == 0 && !Wire.getWireTimeoutFlag();
+  const bool present = lcdPresent();
   if (!present) return;
   doorTick(); outputsTick();
   lcd.init();
@@ -453,7 +499,7 @@ void displayTick() {
   else if (noticeActive()) { a = noticeLine1; b = noticeLine2; }
   else if (ui != Ui::Access) {
     switch (ui) {
-      case Ui::Menu: a = "1 Novo 2 Inativar"; b = "3 Reativar D Sair"; break;
+      case Ui::Menu: a = "1 Novo 2 Inativ."; b = "3 Reativ. D Sair"; break;
       case Ui::RemoveFinger: a = "Cadastrando"; b = "Retire o dedo"; break;
       case Ui::FirstFinger: a = "Cadastrando"; b = "Coloque o dedo"; break;
       case Ui::SecondFinger: a = "Confirme digital"; b = "Mesmo dedo"; break;
@@ -461,7 +507,7 @@ void displayTick() {
       case Ui::ConfirmPin: a = "Repita senha (6)"; break;
       case Ui::DisableId: a = "Desativar ID:"; b = entry; break;
       case Ui::EnableId: a = "Reativar ID:"; b = entry; break;
-      case Ui::ConfirmStatus: a = idText(pendingId) + (enableRequested ? " Reativar?" : " Inativar?"); b = "# Sim  D Cancelar"; break;
+      case Ui::ConfirmStatus: a = idText(pendingId) + (enableRequested ? " Reativar?" : " Inativar?"); b = "# Sim D Cancelar"; break;
       default: break;
     }
     if (ui == Ui::FirstPin || ui == Ui::ConfirmPin) for (size_t i = 0; i < entry.length(); ++i) b += '*';
@@ -470,7 +516,7 @@ void displayTick() {
   else {
     a = !storageReady ? "Falha memoria" : "Senha ou digital";
     if (entry.length()) for (size_t i = 0; i < entry.length(); ++i) b += '*';
-    else b = fingerprintReady ? "# OK * Limpar" : "DY50 indisponivel";
+    else b = fingerprintReady ? "# OK * Limpar" : "DY50 fora do ar";
   }
   if (a != lcdPrevA || b != lcdPrevB) {
     String paddedA = a.substring(0, 16), paddedB = b.substring(0, 16);
@@ -696,13 +742,7 @@ void setup() {
   pinMode(BUTTON_1, INPUT_PULLUP); pinMode(BUTTON_2, INPUT_PULLUP);
   pinMode(LED_R, OUTPUT); pinMode(LED_G, OUTPUT); pinMode(LED_B, OUTPUT); rgb(false, false, false);
   Wire.begin(); Wire.setWireTimeout(10000, true); Wire.clearWireTimeoutFlag();
-  lcd.init();
-  if (!Wire.getWireTimeoutFlag()) lcd.backlight();
-  lcdReady = !Wire.getWireTimeoutFlag();
-  if (lcdReady) {
-    lcd.print("Iniciando...");
-    lcdReady = !Wire.getWireTimeoutFlag();
-  }
+  lcdBoot();
   // BootCounter usa região própria da EEPROM (após o journal) e não depende de recover.
   const bool usersRecovered = UserStore::recover(EEPROM);
   const bool bootCounted = BootCounter::next(EEPROM, bootNumber);
@@ -728,7 +768,7 @@ void setup() {
 void loop() {
   doorTick(); outputsTick();
   if (ui != Ui::Access && uint32_t(millis() - uiTouched) >= UI_TIMEOUT_MS) {
-    resetUi(); notice("Tempo esgotado", "Cadastro cancelado");
+    resetUi(); notice("Tempo esgotado", "Cadastro expirou");
   }
   expireEntry();
   handleKey(keypad.getKey()); fingerprintTick(); fingerprintRecoveryTick(); linkTick(); serialTick();

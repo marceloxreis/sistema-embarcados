@@ -343,10 +343,12 @@ Observações:
   Se o DY50 for 3,3 V, use canais livres do conversor de nível.
 - Se o nível for incompatível, use conversão de nível para UART. Itens sem uso
   ficam isolados.
-- Mensagens esperadas: "Falha memoria" bloqueia. "DY50 indisponivel" aparece
-  no LCD se o leitor não responder no boot. Durante o cadastro, "Slot DY orfao"
-  significa modelo no leitor sem registro válido. O cadastro para por segurança.
-  Não apague a base de digitais.
+- Mensagens esperadas: "Falha memoria" bloqueia. "DY50 fora do ar" aparece
+  no LCD se o leitor não responder no boot. Durante o cadastro, um modelo no leitor
+  sem registro válido (ID 1 a 100, memória OK) é apagado no primeiro dedo: LCD
+  "Slot orfao limpo" / "Recoloque o dedo"; recoloque o dedo. "Slot DY orfao" só
+  aparece se o apagamento falhar, o ID estiver fora da faixa ou o registro
+  estiver corrompido; o cadastro para. Não apague a base de digitais.
 
 Antes de energizar:
 
@@ -466,15 +468,17 @@ Use `LOCK_MODE=0`, com a fechadura e o driver desconectados. Siga a ordem.
 
 - Ligue o Mega pelo USB. Coloque os jumpers D30 e D31 em GND para simular porta fechada.
 - No LCD, veja "Iniciando..." e depois "Senha ou digital". Até o passo 7 o DY50 não
-  está ligado, então "DY50 indisponivel" é o esperado nesta fase. "Falha memoria" bloqueia.
+  está ligado, então "DY50 fora do ar" é o esperado nesta fase. "Falha memoria" bloqueia.
 - Abra o monitor serial a 115200, com final de linha "Nova linha" (Newline). Abrir o
   monitor costuma reiniciar o Mega. Aparece uma linha de boot, no formato
   `BOOT boot=<n> storage=ok|falha lcd=ok|timeout dy50=ok|indisponivel lock_mode=<n>`.
 - Envie `AUTH <senha de administrador de 10 dígitos>`. A resposta deve ser `OK authenticated`.
   Sem AUTH, comandos respondem `ERR auth_required`.
 - Envie `STATUS`. Formato esperado:
-  `last_id=... queued=... dropped=... replies_dropped=... lcd=ok dy50=indisponivel lock_mode=0`
-  Até o passo 7 o DY50 não está ligado, então `dy50=indisponivel` é esperado nesta
+  `last_id=... queued=... dropped=... replies_dropped=... lcd=ok|timeout dy50=indisponivel lock_mode=0`
+  `lcd=ok` vale com o LCD ligado. `lcd=timeout` aparece quando o LCD não responde
+  no boot (ausente ou barramento I²C sem resposta); o Mega tenta de novo a cada
+  30 s. Até o passo 7 o DY50 não está ligado, então `dy50=indisponivel` é esperado nesta
   fase, tanto aqui quanto na linha `BOOT`.
 - Meça D16 (esperado perto de 5 V em repouso) e D35 (esperado 0 V). Cada reset
   faz D35 flutuar por 1 a 2 s, por isso o pull-down da seção 3.10. Meça depois do boot.

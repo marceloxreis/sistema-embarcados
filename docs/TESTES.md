@@ -15,6 +15,13 @@ evento e foto, confirmações com ID incorreto e reset confirmado pelo controlad
 Os testes do Mega cobrem abertura durante busca de senha, cadastro de digital e
 escrita na EEPROM, além de timeout do LCD. A quantidade de testes muda com a
 suíte: consulte a saída de `python3 -m unittest discover -s tests -v`.
+`tests/test_lcd_textos.py` confere, a partir do próprio `.ino`, que nenhum texto
+do LCD passa de 16 colunas. `tests/test_mega_tst02.py` cobre debounce, cores do
+LED, texto do LCD com ID, teclas D, `*` e `#`, `pin_in_use` e sequências com
+`doorTick` e `outputsTick` reais. Com `CONTROLE_MEGA_B6=<pasta>`, ele roda contra
+outra cópia do firmware, o que serve para testes de mutação. Dois dos 9 testes
+desse arquivo (`RegistroCorrompidoTests`) são de regressão de registro corrompido
+(B7, REQ-E4): falham no código anterior à correção e passam no atual.
 
 O teste `tests/test_frescor_agent.py` exige ausência de foto se houver
 atraso de 6 s anterior à leitura UART e verifica o desafio vinculado ao evento.
@@ -34,7 +41,7 @@ comprimento incompatível e timeout. Em erro de comunicação, o leitor é
 desabilitado até reiniciar. O protocolo não autentica o leitor nem contém ID de
 transação; o teste não prova compatibilidade com a unidade DY50 física.
 
-Há registros de retomadas anteriores (simulação simavr e painel em navegador) sem artefato no repositório; não contam como validação.
+As simulações simavr e o teste do painel em navegador feitos na sessão 2 estão registrados em [VALIDACAO.md](VALIDACAO.md), com o nível de evidência de cada um. Os scripts não estão no repositório, e nada disso substitui a bancada.
 
 ## Roteiro de bancada
 
@@ -79,9 +86,12 @@ requisitos de [ESCOPO.md](ESCOPO.md).
 | Menu com 1/2/3/D (E2) | Conferir as opções do menu | Cadastrar, desativar, reativar e sair |
 | Cadastro com o mesmo dedo (req. 8) | Retirar, colocar, retirar e colocar o mesmo dedo | Avança para criação da senha |
 | Dedos diferentes (req. 8) | Cadastrar com dedos diferentes nas duas leituras | Não salva; retorna com erro |
-| Erro de leitura no cadastro (E4) | Dedo mal posicionado ou sensor coberto (imagem ilegível); dedos diferentes nas duas leituras; depois, sem tocar o sensor por 60 s | LCD "Cadastro falhou" com motivo "Digital ilegivel", "Erro de leitura" ou "Digitais diferem"; evento `enroll_failed`; ID não consumido; nada salvo; nenhuma liberação. Sem toque por 60 s: "Tempo esgotado" e "Cadastro cancelado" (cortado para 16 colunas) |
+| Erro de leitura no cadastro (E4) | Dedo mal posicionado ou sensor coberto (imagem ilegível); dedos diferentes nas duas leituras; depois, sem tocar o sensor por 60 s | LCD "Cadastro falhou" com motivo "Digital ilegivel", "Erro de leitura" ou "Digitais diferem"; evento `enroll_failed`; ID não consumido; nada salvo; nenhuma liberação. Sem toque por 60 s: "Tempo esgotado" e "Cadastro expirou" |
 | Digital repetida (req. 7, E3) | Cadastrar digital de pessoa ativa ou inativa já existente | Recusa duplicidade; modelo do DY50 não é apagado |
-| Senhas diferentes (req. 8) | Digitar senhas diferentes na criação e na confirmação | Pede nova senha e confirmação |
+| Slot órfão limpo (MEGA-03) (não executado) | Criar a condição de órfão (modelo no DY50 sem registro válido na EEPROM, com armazenamento OK; procedimento a definir na bancada); iniciar cadastro e colocar o dedo | LCD "Slot orfao limpo" e "Recoloque o dedo"; ao recolocar o dedo, nova busca; limpeza sem evento de auditoria; cadastro segue. Se o apagamento falhar: "Slot DY orfao" e o cadastro para |
+| Falha de memória (REQ-E4) (não executado) | Com armazenamento indisponível ou registro corrompido (procedimento a definir na bancada), apresentar digital e senha; pedir reset web de senha | LCD "Falha memoria" e "Acesso negado"; evento `access_denied` com motivo "Erro na memoria"; reset responde `storage_error`; confirmação de cadastro avisa a falha |
+| Tolerância de getImage (MEGA-04) (não executado) | Durante o cadastro, provocar falhas transitórias de leitura (procedimento a definir na bancada) | Até 3 falhas consecutivas são toleradas; a 4ª aborta o cadastro; `PACKETRECIEVEERR` aborta na primeira; acesso comum não muda |
+| Senhas diferentes (req. 8) | Digitar senhas diferentes na criação e na confirmação | LCD "Senhas nao batem"; pede nova senha e confirmação |
 | Senha repetida (req. 7) | Usar senha já cadastrada para ativo ou inativo | Recusa |
 | Cadastro completo (req. 6, 8) | Concluir digital, senha e confirmação com `#` | Novo ID sequencial; só então publicado |
 | Cancelar cadastro (req. 6, 9) | Cancelar com `D` antes de concluir | Não consome novo ID |
@@ -101,7 +111,7 @@ requisitos de [ESCOPO.md](ESCOPO.md).
 | Fechar após alerta (req. 16, 17) | Fechar a porta após o alerta de 5 min | Bipes param; ciclo encerrado; aguarda outra credencial |
 | Porta aberta sem autorização (E1) | Abrir a porta sem credencial (ex.: sensor solto) | Alarme: vermelho piscando; não aceita abertura normal |
 | Boot e espera normal (req. 15) | Ligar, aguardar sem interação e depois enviar `AUTH <senha de administrador>` e `STATUS` pelo USB | Buzzer desligado na espera; `STATUS` responde depois do AUTH |
-| STATUS e BOOT no USB (req. 1, 19) | Abrir o monitor a 115200, enviar `AUTH <senha de administrador de 10 dígitos>` e `STATUS`; ler a linha `BOOT` ao reiniciar | `OK authenticated`; STATUS no formato `last_id=... queued=... dropped=... replies_dropped=... lcd=ok|timeout dy50=ok|indisponivel lock_mode=0`; BOOT com `storage=`, `lcd=`, `dy50=` e `lock_mode=0`; AUTH errado responde `ERR auth`; sem AUTH, `ERR auth_required` |
+| STATUS e BOOT no USB (req. 1, 19) | Abrir o monitor a 115200, enviar `AUTH <senha de administrador de 10 dígitos>` e `STATUS`; ler a linha `BOOT` ao reiniciar | `OK authenticated`; STATUS no formato `last_id=... queued=... dropped=... replies_dropped=... lcd=ok|timeout dy50=ok|indisponivel lock_mode=0`; BOOT com `storage=`, `lcd=`, `dy50=` e `lock_mode=0`; `lcd=timeout` também aparece com LCD ausente ou sem resposta no boot; AUTH errado responde `ERR auth`; sem AUTH, `ERR auth_required` |
 | Modo da trava (req. 1, 17) | Com `LOCK_MODE=0`, medir a saída de acionamento (D35) durante um ciclo | 0 V; saída não aciona a fechadura |
 | Sem internet ao iniciar (req. 19, 21, E8) | Ligar com Wi-Fi/internet indisponível (sem NTP) | Acesso local funciona; eventos sem data (painel mostra "Sem horário", sessão e segundos desde a inicialização). Com Wi-Fi e NTP no ar, parar o servidor não remove a data dos eventos |
 | Retornar internet (req. 21) | Restabelecer Wi-Fi e NTP | Novos eventos recebem data e hora; eventos antigos não são reescritos |
