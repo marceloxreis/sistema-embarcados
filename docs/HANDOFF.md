@@ -3,6 +3,8 @@
 Estado atual único. Substitui os handoffs anteriores. Use este arquivo como
 ponto de partida; `docs/HANDOFF-REVISAO-OPUS.md` é histórico da revisão.
 
+Retomada: no Claude Code, use `/sistema-embarcado` (skill do dono em `~/.claude/skills/sistema-embarcado/`), que lê este arquivo e conduz a bancada passo a passo.
+
 ## 1. Objetivo e arquitetura
 
 Controle de acesso com biometria, teclado, fechadura e auditoria:
@@ -33,9 +35,11 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 
 ## 3. Estado Git
 
-- Branch `main` em `60ddda6` ("Corrige pendencias P2 do Mega, painel e registros
-  da sessao 2"), igual a `origin/main`, sem mudanças pendentes (verificado em
-  host, `git status -sb`, 30/10/2026). O commit anterior `2c9aa85` fica como
+- Branch `main`, igual a `origin/main` em 30/10/2026; confira o commit atual com
+  `git log -1 --oneline`. Commits da sessão 2: `60ddda6` (pendências P2 do Mega,
+  painel e docs), `cd2f02f` (handoff), `bf00a96` (simulação Wokwi; CAM-03 e SRV-02
+  descartados), `74c79a4` (cenários Wokwi do teclado). O commit anterior `2c9aa85`
+  fica como
   histórico, e o commit `6b09569` (arquitetura Mega + CAM) continua no histórico
   da `main`.
 - Os testes `tests/test_lcd_textos.py` e `tests/test_mega_tst02.py` já estão
@@ -331,11 +335,14 @@ Pendente:
 ## 9. Próximo passo exato
 
 Ordem sugerida:
-1. Bancada, passo 3 de `docs/MONTAGEM.md` (Mega sozinho pelo USB), quando o dono
+1. Opcional, sem hardware: revisão elétrica de `docs/MONTAGEM.md` e
+   `docs/MATERIAIS.md` (níveis 5 V/3,3 V, fonte, conversor de nível, proteção da
+   fechadura) antes de comprar os componentes.
+2. Bancada, passo 3 de `docs/MONTAGEM.md` (Mega sozinho pelo USB), quando o dono
    estiver com a placa. O adaptador da ESP32-CAM ainda não chegou.
-2. Wokwi: só o buzzer pendente (cenário de porta aberta por tempo ou entrada
+3. Wokwi: só o buzzer pendente (cenário de porta aberta por tempo ou entrada
    expirada, se útil). Teclado e LED RGB já foram feitos.
-3. P2 de verificação de senha: decidir se faz verificação incremental.
+4. P2 de verificação de senha: decidir se faz verificação incremental.
 
 Depois, o roteiro de bancada existente:
 1. Configuração local, sem versionar:
