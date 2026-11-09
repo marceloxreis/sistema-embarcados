@@ -1,4 +1,4 @@
-# Handoff: controle de acesso ESP32 (estado em 06/11/2026; sessão 9 em 06/11/2026: teclado novo, RC522, ID+senha, gravação do Mega pela CAM, diodo da fechadura e correções após o pulso; sessão 8 em 06/11/2026: rede da casa, IP fixo e primeira OTA; sessão 7 em 05/11/2026: rede nova e diagramas; sessão 6 em 04/11/2026; sessão 5 em 03/11/2026; sessões 4 e continuação em 02/11/2026, bancada; continuação da tarde de 03/11/2026 na seção 4)
+# Handoff: controle de acesso ESP32 (estado em 09/11/2026; sessão 10 em 09/11/2026: Mega pela USB pelo colega, PR #1 mergeado; sessão 9 em 06/11/2026: teclado novo, RC522, ID+senha, gravação do Mega pela CAM, diodo da fechadura e correções após o pulso; sessão 8 em 06/11/2026: rede da casa, IP fixo e primeira OTA; sessão 7 em 05/11/2026: rede nova e diagramas; sessão 6 em 04/11/2026; sessão 5 em 03/11/2026; sessões 4 e continuação em 02/11/2026, bancada; continuação da tarde de 03/11/2026 na seção 4)
 
 Estado atual único. Substitui os handoffs anteriores. Use este arquivo como
 ponto de partida; `docs/HANDOFF-REVISAO-OPUS.md` é histórico da revisão.
@@ -22,7 +22,7 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 
 ## 2. Regras do dono
 
-- `LOCK_MODE=0` até o ensaio da fechadura (`docs/MONTAGEM.md`, seção 6).
+- `LOCK_MODE=0` até o ensaio da fechadura (`docs/MONTAGEM.md`, seção 6) (fechadura ensaiada em 06/11/2026; desde então o Mega roda com LOCK_MODE=1, ver seção 4, sessão 9).
 - Não gravar placas, não fazer commit nem push sem coordenar com o dono.
 - Marcar toda evidência como: verificado em host, verificado em hardware, compilado, simulado, análise de código, estimativa ou não verificado.
 - Em hardware, foram verificados em 30/10/2026 (noite) o passo 3 da bancada (Mega pelo USB, sem LCD) e a matriz do teclado 4x4 por continuidade. A leitura do teclado pelo Mega não foi verificada em 30/10/2026; foi verificada em 02/11/2026 (sessão 4, seção 4). Em 02/11/2026 também foram verificados o buzzer ativo, o circuito do buzzer com BC546 (acionamento pelo firmware verificado depois, na continuação de 02/11/2026) e os resistores medidos. Na mesma continuação: DY50 comunicando (dy50=ok), cadastro, acesso pela digital e pela senha e buzzer pelo firmware, verificados em hardware. Simulação não é confirmação física.
@@ -57,6 +57,7 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 - 04/11/2026 (sessão 6): alterados `firmware/MegaControlador/MegaControlador.ino`, `firmware/Esp32CamRede/Esp32CamRede.ino`, `firmware/Esp32CamRede/Config.example.h`, `servidor/server.py`, testes (`tests/test_server.py`, `tests/test_camera_network.py`, `tests/test_cam_ota.py` novo) e docs (`HANDOFF.md`, `VALIDACAO.md`, `TESTES.md`, `MONTAGEM.md`). Commit desta sessão: ver git log (feito pelo orquestrador, a pedido do dono).
 - 06/11/2026 (sessão 9): commits `160534d` (RC522 como terceiro método de acesso, login por ID + senha e bloqueio do teclado) e `9d3bed2` (gravação do Mega pela ESP32-CAM, STK500v2 pela rede, com `scripts/gravar-mega-pela-cam.py`). Textos novos do LCD e piscada azul do LED em 10 s: mudança em andamento em `firmware/MegaControlador/MegaControlador.ino` por outro agente, não commitada quando este registro foi escrito (git status: `.ino` do Mega e testes `test_login_id_senha.py`, `test_mega_display.py` e `test_mega_tst02.py` modificados pelo outro agente). Docs da sessão 9 (`HANDOFF.md`, `VALIDACAO.md`) não commitados. (Superado na noite de 06/11: ver item seguinte.) O zip `handoff-bancada-2026-11-06` (bancada do amigo do dono) não é versionado.
 - 06/11/2026 (sessão 9, noite): `bf608b8` (textos do LCD, LED de repouso a cada 10 s e handoff), `99fcc71` (reinício do RC522 e do DY50 após o pulso da fechadura; debounce de 200 ms nos sensores de porta) e `b50bd0b` (telas do ID, mapa de cores do LED, menu 5 e evento `card_unlinked`). Gravados no Mega: até `bf608b8`. `99fcc71` e `b50bd0b` NÃO gravados no Mega nem na CAM. Docs do fim da sessão 9 em commit próprio (ver git log).
+- 09/11/2026 (sessão 10): PR #1 `feat/deploy-nuvem-https` (12 commits, do colega Josh) mergeado na `main` pelo dono como merge commit `1111979` (relato do dono). Mega gravado pela USB a partir desse branch, então roda o código da `main`, com `LOCK_MODE=1` e `ADMIN_PIN` novo de 6 dígitos definido pelo Josh (a trocar, seção 7) (gravação: verificado em hardware, seção 4). CAM NÃO gravada com o firmware HTTPS: segue com o firmware antigo, sem HTTPS (7 tentativas de OTA pelo Wi-Fi falharam; relato do dono).
 
 ## 4. O que foi feito em 30/10/2026
 
@@ -585,7 +586,7 @@ Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma se
 
 **Gravação**
 - Mega gravado pela USB com `feat/deploy-nuvem-https` (inclui `99fcc71` e `b50bd0b`): 44642 B, depois 44692 B com o diagnóstico abaixo (verificado em hardware). Bibliotecas instaladas no `arduino-cli` do Mac: Crypto 0.4.0, Adafruit Fingerprint 2.1.4, Keypad 3.1.1, MFRC522 1.4.12.
-- `Config.h` local do Mega refeito a partir do exemplo: `ADMIN_PIN` novo de 6 dígitos (o antigo não estava no Mac; item (b) da seção 7 resolvido para o Mega), `LOCK_MODE = 1`, resto igual ao exemplo.
+- `Config.h` local do Mega refeito a partir do exemplo: `ADMIN_PIN` novo de 6 dígitos (o antigo não estava no Mac; item (b) da seção 7 foi substituído para o Mega, mas o PIN novo foi exposto em 09/11/2026, então o item (b) NÃO está resolvido; decidir se o ADMIN_PIN do Mega volta a ser igual ao do servidor (10 dígitos, como no `Config.example.h`)), `LOCK_MODE = 1`, resto igual ao exemplo.
 - A primeira tentativa pela USB deu timeout: o IO2 da CAM fica direto no RX0 e, com a CAM desligada, segura a linha. Com o fio do RX0 solto o bootloader respondeu (assinatura 1E 98 01) (verificado em hardware).
 
 **Loops em "Iniciando..."**
@@ -606,7 +607,18 @@ Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma se
 - CAM com o firmware HTTPS (`Esp32CamRede`) ainda não gravada.
 - Sensor de porta leu "aberta" duas vezes sozinho em 30 s (23 s após o boot); conferir os botões. Sugestão da sessão 9 continua: pull-up externo 4,7 kΩ + 100 nF em D30 e D31.
 
-## 5. Verificação (30/10/2026, 02/11/2026, 03/11/2026, 04/11/2026 e 06/11/2026, sessões 8 e 9)
+**Fio do RESET** (relato do dono, 09/11/2026)
+- Josh desligou e isolou o fio RESET (CAM -> transistor -> RESET do Mega). Motivo: cada reinício da CAM e cada tentativa de gravação falha também reiniciavam o Mega.
+- O dono religa o fio em 10/11. Até religar, gravar o Mega pela CAM não é possível; gravar a CAM pelo cabo (Mega 2 como ponte) continua possível com o fio solto.
+
+**Credenciais expostas** (relato do dono, 09/11/2026)
+- Josh enviou por WhatsApp um PDF com a senha do painel, o PIN do painel e o ADMIN_PIN do Mega em texto puro. Itens expostos, todos a trocar: senha do navegador do painel (Caddy), PIN do painel (= ADMIN_PIN do servidor na VM, 10 dígitos) e ADMIN_PIN do Mega (6 dígitos, diferente do servidor). Junto, DEVICE_KEY e OTA_PASSWORD (trocados no passo de gravação da CAM). Apagar o PDF das conversas e pedir ao colega que apague as cópias. Valores nunca no chat nem neste arquivo.
+
+**Revisão do PR #1** (análise de código, revisão Sonnet; testes em host)
+- Sem problema crítico. Itens abertos na seção 7 (tela de repouso sem indicar digital fora, pilha da `networkTask`, ícones em SRAM, primeira requisição TLS lenta após queda de Wi-Fi, `deploy/instalar.sh`).
+- Suíte completa após o merge não executada nesta sessão (não verificado).
+
+## 5. Verificação (30/10/2026, 02/11/2026, 03/11/2026, 04/11/2026, 06/11/2026 e 09/11/2026, sessões 8, 9 e 10)
 
 | Verificação | Resultado | Evidência |
 |---|---|---|
@@ -698,6 +710,8 @@ Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma se
 | Gravação do Mega pela CAM, 2a tentativa, 06/11/2026 | HTTP 200 ok, 43688 bytes, 11296 ms, 1 tentativa; LCD com o texto novo (relato do dono) | verificado em hardware |
 | Wi-Fi da CAM, 06/11/2026 (noite) | Ping 1 a 6 s, perdas, heartbeats espaçados; melhora após reinício; sem os fios novos também oscila; Mac -> roteador 3,7 ms | verificado em host (ping); verificado em hardware (teste sem fios); causa: inferência |
 | Fechadura com LOCK_MODE=1, 06/11/2026 | Abriu; o Mega reinicia quando ela solta (sem 1N4007) | relato do dono; causa: inferência |
+| Testes do PR #1 (`tests/test_proxy_origem.py`, `tests/test_mega_tst02.py`, `tests/test_lcd_led_menu5.py`), branch `feat/deploy-nuvem-https`, 09/11/2026 | 18 testes OK | verificado em host (revisão Sonnet) |
+| Suíte completa após o merge `1111979`, 09/11/2026 | Não executada nesta sessão | não verificado |
 
 Os mesmos números estão registrados em docs/VALIDACAO.md.
 
@@ -773,7 +787,17 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
 
 ## 7. Pendências abertas (priorizadas)
 
-- 06/11/2026 (sessão 9, atual; noite):
+- 09/11/2026 (sessão 10, atual; fim do dia):
+  - (1) Religar o fio do RESET (dono, 10/11) e confirmar que reiniciar só a CAM não reinicia o Mega (seção 9, passo 1). Prioritário.
+  - (2) Trocar as credenciais expostas no PDF do WhatsApp: senha do navegador do painel (Caddy), PIN do painel (= ADMIN_PIN do servidor na VM, 10 dígitos), ADMIN_PIN do Mega (6 dígitos, diferente do servidor), DEVICE_KEY e OTA_PASSWORD. Prioritário. Valores nunca no chat. Apagar o PDF das conversas e pedir ao colega que apague as cópias.
+  - (3) Token do DuckDNS na VM (o timer não tem token; o domínio cai se o IP da VM mudar) ou Elastic IP.
+  - (4) Gravar a CAM com o firmware HTTPS (seção 9, passos 2 a 4); ainda não gravada.
+  - (5) Revisão do PR #1 (análise de código, Sonnet; sem problema crítico):
+    - MÉDIO: tela de repouso não indica digital fora (linha 2 mudou de "ID cartao dedo" para ""); testes aceitam ""; cenas 1 a 3 sem teste.
+    - MÉDIO (plausível): pilha de `networkTask` de 10000 B (`firmware/Esp32CamRede/Esp32CamRede.ino`, xTaskCreate perto da linha 540) pode ser pequena para o handshake TLS; subir para 12 a 16 KB se travar ou reiniciar.
+    - BAIXO: `icons[7][8]` do LCD em SRAM (pode ir para PROGMEM); primeira requisição TLS após queda de Wi-Fi pode travar 5 a 8 s (nenhum evento perdido); `deploy/instalar.sh`: umask 077 persiste, entrada do sed sem validação, PAINEL_SENHA visível em `ps`.
+    - Suíte completa após o merge não executada (não verificado).
+- 06/11/2026 (sessão 9, noite; superado pelo bloco de 09/11/2026 acima, mantido como histórico):
   - (1) Instalar o 1N4007 na fechadura (faixa no +) e confirmar que o Mega não reinicia quando ela solta (em andamento; causa provável: inferência).
   - (2) Commitar os textos do LCD e a piscada do LED (outro agente) e regravar o Mega pela CAM.
   - (3) Ensaios do firmware novo no Mega: 16 teclas, ID+senha, bloqueio na 5a falha, cartão (menu 4 e acesso), digital, eventos e foto no painel, cor do LED (cátodo ou ânodo comum).
@@ -937,7 +961,19 @@ Pendente:
 
 ## 9. Próximo passo exato
 
-Próximo passo exato (06/11/2026, fim da sessão 9), em ordem:
+Próximo passo exato (09/11/2026, fim da sessão 10, após o merge do PR #1), em ordem:
+Conferência de partida: abrir https://dispensario-pse.duckdns.org (pede a senha do navegador e depois o PIN do painel); a CAM deve aparecer sem registro/offline até a gravação em HTTPS (esperado); conferir no LCD do Mega que a cena de repouso é a animada (confirma que `b860a9a` está gravado; não verificado).
+Estado: `main` em `1111979` (PR #1 mergeado pelo dono); Mega com o firmware da `main` gravado pela USB (LOCK_MODE=1); CAM com o firmware antigo, sem HTTPS (7 OTAs falharam pelo Wi-Fi); fio do RESET isolado (o dono religa em 10/11); credenciais expostas no WhatsApp a trocar; DuckDNS sem token na VM.
+  (1) Religar o fio do RESET; reiniciar só a CAM e observar se o Mega reinicia junto (LCD "Iniciando...", contador de boot). Se reiniciar: CAM forçar IO12 em nível baixo mais cedo no boot, ou pull-down na base do transistor; até resolver, deixar o fio solto e gravar o Mega pela USB (se der timeout, soltar o fio do RX0 que vem do IO2 da CAM, como na sessão 10).
+  (2) Reforçar a alimentação da CAM (capacitor de 470 a 1000 µF no 5 V ou fonte separada) antes de gravar.
+  (3) Gravar a CAM em HTTPS pelo cabo, com o Mega 2 como ponte a 115200 (procedimento "Sessão 5, continuação" na seção 4 desta HANDOFF), seguindo o roteiro "Primeira gravação em HTTPS: o que olhar no monitor serial" de `docs/DEPLOY.md`. Pode ser feito antes de religar o fio do RESET. Antes, o dono ajusta o Config.h local da CAM: SERVER_URL em https://dispensario-pse.duckdns.org, DEVICE_KEY novo (igual ao do /etc/controle-acesso.env da VM, reiniciar o serviço) e OTA_PASSWORD novo (trocados nesta gravação). Monitor serial aberto; se travar ou reiniciar no handshake, subir a pilha da networkTask para 12 a 16 KB. Apagar a pasta de build depois (tem segredos).
+  (4) Trocar senha do painel (Caddy) e ADMIN_PIN do servidor na VM, e ADMIN_PIN do Mega (gravar pela USB). Valores nunca no chat.
+  (5) Teste ponta a ponta, já com as credenciais novas: um acesso chegando ao painel com foto; `scripts/testar-servidor.py`.
+  (6) DuckDNS: criar `/etc/controle-acesso-duckdns.env` (modo 0600) com o domínio e o token, conforme `docs/DEPLOY.md`; token no painel do DuckDNS do dono, nunca no chat; ou Elastic IP (cobrado com a VM parada).
+  (7) Correções da revisão do PR #1 (tela de repouso indicar digital fora + teste; ícones em PROGMEM) e rodar a suíte completa: `CONTROLE_TEST_LIBS=/tmp/controle-test-libs-20261029 CONTROLE_TEST_STRICT=1 python3 -m unittest discover -s tests -q` (regenerar com `python3 scripts/bootstrap-test-libs.py /tmp/controle-test-libs-20261029` se a pasta não existir).
+  (8) Botões da porta: prender e pôr pull-up 4,7 kΩ + 100 nF em D30 e D31 (sensor leu "aberta" sozinho na sessão 10).
+
+Próximo passo exato (06/11/2026, fim da sessão 9; superado pelo bloco de 09/11/2026 acima: itens 2 e 3 do Mega feitos pela USB pelo colega, e passo 5 (leitores após o pulso) confirmado na sessão 10; mantido como histórico), em ordem:
 Estado: Mega com o firmware de `bf608b8` gravado pela CAM (LOCK_MODE=1; 1N4007 instalado; fechadura sem reiniciar o Mega); `99fcc71` e `b50bd0b` commitados, NÃO gravados no Mega nem na CAM; CAM em 192.168.1.162; servidor reiniciado às 20:30:24 (antes de `b50bd0b`); Mac fora da MARCILIO&PATY; `/tmp/camb` apagada.
   (1) Mac na MARCILIO&PATY (IP fixo 192.168.1.50); conferir a CAM: `ping 192.168.1.162` e o painel.
   (2) Recompilar a CAM: `"/Applications/Arduino IDE.app/Contents/Resources/app/lib/backend/resources/arduino-cli" compile --fqbn esp32:esp32:esp32cam:PartitionScheme=min_spiffs --build-path /tmp/camb firmware/Esp32CamRede`; OTA no Terminal do dono (reiniciar a CAM antes; repetir se der timeout ou broken pipe): `read -s "OTA?Senha OTA: " && echo && python3 ~/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12/tools/espota.py -i 192.168.1.162 -p 3232 -a "$OTA" -f /tmp/camb/Esp32CamRede.ino.bin -r; unset OTA`; depois `rm -rf /tmp/camb`. Conferir a rota: `curl -X POST http://192.168.1.162:8081/mega` -> 401.
