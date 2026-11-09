@@ -1,0 +1,14 @@
+[Unit]
+Description=Controle de acesso: backup do banco
+
+[Service]
+Type=oneshot
+User=controle
+Group=controle
+ExecStart=/usr/bin/python3 /opt/controle-acesso/deploy/backup.py /var/lib/controle-acesso/historico.sqlite3 /var/lib/controle-acesso/backups 14
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/controle-acesso
+ProtectHome=true
+PrivateTmp=true

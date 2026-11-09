@@ -1,0 +1,18 @@
+# Mantém o domínio DuckDNS apontando para o IP atual da VM (o IP público muda a cada stop/start).
+# Só roda se /etc/controle-acesso-duckdns.env existir, com DUCKDNS_DOMINIO e DUCKDNS_TOKEN.
+[Unit]
+Description=Atualiza o IP no DuckDNS
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/controle-acesso-duckdns.env
+
+[Service]
+Type=oneshot
+DynamicUser=true
+EnvironmentFile=/etc/controle-acesso-duckdns.env
+# ip vazio: o DuckDNS usa o IP de origem do pedido, que é o IP público da VM.
+ExecStart=/bin/sh -c 'r=$(curl -fsS --max-time 20 "https://www.duckdns.org/update?domains=$DUCKDNS_DOMINIO&token=$DUCKDNS_TOKEN&ip="); echo "duckdns: $r"; [ "$r" = OK ]'
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

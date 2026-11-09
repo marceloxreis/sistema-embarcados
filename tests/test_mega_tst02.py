@@ -411,8 +411,10 @@ int main() {
  // (f) ocioso: ID de até 3 dígitos aparece; entrada maior (pode ser o admin) mascara; DY50 e memória
  entry = "12"; tela("#Confirma *Limpa", "ID: 12");
  entry = "1234"; tela("#Confirma *Limpa", "ID: ****");
- entry = ""; tela("Controle acesso", "ID cartao dedo");
- fingerprintReady = false; tela("Controle acesso", "ID ou cartao"); fingerprintReady = true;
+ // Home animada: a cena de texto ocupa os 3 s iniciais de cada ciclo de 12 s.
+ now = (now / 12000 + 1) * 12000;
+ entry = ""; tela("Controle acesso", "");  // home: no LCD só o título
+ fingerprintReady = false; tela("Controle acesso", ""); fingerprintReady = true;
  storageReady = false; tela("Falha memoria", "ID cartao dedo");
  entry = "1"; tela("#Confirma *Limpa", "ID: 1"); entry = ""; storageReady = true;
  // (f2) tela de senha do ID (B1): mascara com '*'; '*' vazio volta ao ID (teste de texto só)

@@ -579,6 +579,33 @@ Bancada com o dono. Níveis em docs/VALIDACAO.md (registros de 06/11/2026, noite
 
 **Ao parar**: o Mac saiu da rede MARCILIO&PATY (foi para outra rede 10.0.0.x, longe da bancada). A pasta `/tmp/camb` sumiu: recompilar antes da OTA.
 
+### Sessão 10 (09/11/2026): Mega gravado pela USB, terra do DY50 e LED com resistores
+
+Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma senha registrada aqui.
+
+**Gravação**
+- Mega gravado pela USB com `feat/deploy-nuvem-https` (inclui `99fcc71` e `b50bd0b`): 44642 B, depois 44692 B com o diagnóstico abaixo (verificado em hardware). Bibliotecas instaladas no `arduino-cli` do Mac: Crypto 0.4.0, Adafruit Fingerprint 2.1.4, Keypad 3.1.1, MFRC522 1.4.12.
+- `Config.h` local do Mega refeito a partir do exemplo: `ADMIN_PIN` novo de 6 dígitos (o antigo não estava no Mac; item (b) da seção 7 resolvido para o Mega), `LOCK_MODE = 1`, resto igual ao exemplo.
+- A primeira tentativa pela USB deu timeout: o IO2 da CAM fica direto no RX0 e, com a CAM desligada, segura a linha. Com o fio do RX0 solto o bootloader respondeu (assinatura 1E 98 01) (verificado em hardware).
+
+**Loops em "Iniciando..."**
+- Dois episódios, contador de boot de 81 (06/11) para 476 e depois de 535 para 676. O primeiro parou ao prender o botão de cima da porta, que estava solto; o segundo veio logo após montar os resistores do LED e parou com a fiação acomodada (relato do dono). Causa provável: curto ou mau contato durante a mexida (inferência).
+- Descartados por teste: os fios da CAM (RX0, TX0 e RESET religados um a um, boot normal em todos) e o buzzer com a porta aberta (porta aberta 15 s sem nenhum reboot, contador 676 para 677) (verificado em hardware).
+- Leitura da serial no macOS: configurar a velocidade DEPOIS de abrir a porta. `stty` antes do `open` volta a 9600 e o texto sai como lixo, o que levou a um diagnóstico errado de "Mega preso em reset" nesta sessão.
+
+**DY50: falha a cada 10 s**
+- Sintoma: "Falha no leitor / Tente novamente" sozinho, LED vermelho. Diagnóstico novo no firmware: `DY50 err=0x..` na serial (só na placa, `#ifdef ARDUINO`). Resultado: `err=0x1` (pacote corrompido) exatamente na piscada azul de repouso (`millis() % 10000 < 200`); o handshake da recuperação passava (verificado em hardware).
+- Prova: build de teste sem a piscada azul, 63 s sem erro (verificado em hardware).
+- Causa: LED RGB ligado direto nos pinos 32 a 34 SEM resistor; a corrente do azul fazia o GND do Mega oscilar em relação à calha da MB102, que alimenta o DY50 (inferência apoiada no teste).
+- Correção de hardware: 2 fios extras de GND do Mega para a calha do DY50 e para a calha oposta; com isso, 55 s sem erro já com a piscada azul (verificado em hardware). Depois, 330 Ω em cada cor do LED (cátodo comum, perna maior no GND) (relato do dono).
+
+**Ensaio dos leitores após o pulso (resolve o PROBLEMA da sessão 9)**
+- Digital, cartão, ID + senha, cartão de novo e digital de novo, em sequência: todos liberaram (relato do dono). `99fcc71` confirmado em hardware.
+
+**Pendente**
+- CAM com o firmware HTTPS (`Esp32CamRede`) ainda não gravada.
+- Sensor de porta leu "aberta" duas vezes sozinho em 30 s (23 s após o boot); conferir os botões. Sugestão da sessão 9 continua: pull-up externo 4,7 kΩ + 100 nF em D30 e D31.
+
 ## 5. Verificação (30/10/2026, 02/11/2026, 03/11/2026, 04/11/2026 e 06/11/2026, sessões 8 e 9)
 
 | Verificação | Resultado | Evidência |

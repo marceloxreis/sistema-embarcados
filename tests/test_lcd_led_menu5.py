@@ -87,7 +87,7 @@ TELAS = r'''
 int main() {
  storageReady = true; fingerprintReady = true; rfidReady = true;
  door.begin(true, now); resetUi(); noticeDuration = 0;
- tela("Controle acesso", "ID cartao dedo");
+ now = (now / 12000 + 1) * 12000; tela("Controle acesso", "");
  entry = "1"; tela("#Confirma *Limpa", "ID: 1");
  entry = "12"; tela("#Confirma *Limpa", "ID: 12");
  entry = "123"; tela("#Confirma *Limpa", "ID: 123");

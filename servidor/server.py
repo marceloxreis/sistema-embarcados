@@ -212,7 +212,7 @@ class Handler(BaseHTTPRequestHandler):
         expected = self.app.device_key if device else self.app.admin_pin
         supplied = self.headers.get(header, "")
         valid = hmac.compare_digest(supplied.encode(), expected.encode())
-        outcome = self.server.check_auth(self.client_address[0], device, valid)
+        outcome = self.server.check_auth(self.origin(), device, valid)
         if outcome == "limited":
             self.reply(429, {"error": "Muitas tentativas; tente novamente mais tarde."})
             return False
@@ -220,6 +220,18 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(401, {"error": "Autenticação necessária."})
             return False
         return True
+
+    def origin(self):
+        # Atrás de proxy reverso na mesma máquina (Caddy), o peer TCP é sempre o
+        # loopback; sem isto, dez falhas de qualquer cliente bloqueariam todos,
+        # inclusive a CAM. Só confia no cabeçalho com --trust-proxy e peer
+        # loopback. O valor mais à direita é o que o próprio proxy acrescentou.
+        peer = self.client_address[0]
+        if self.server.trust_proxy and peer in ("127.0.0.1", "::1"):
+            forwarded = self.headers.get("X-Forwarded-For", "").split(",")[-1].strip()
+            if forwarded and len(forwarded) <= 45:
+                return forwarded
+        return peer
 
     def body(self):
         try:
@@ -496,6 +508,7 @@ class BoundedHTTPServer(ThreadingHTTPServer):
     auth_max_origins = 1024
     connection_deadline = 15.0
     max_connections = 32
+    trust_proxy = False
 
     def __init__(self, address, handler):
         # TCPServer chama listen durante a inicialização da classe base.
@@ -567,9 +580,10 @@ class BoundedHTTPServer(ThreadingHTTPServer):
         super().handle_error(request, client_address)
 
 
-def make_server(host, port, app):
+def make_server(host, port, app, trust_proxy=False):
     server = BoundedHTTPServer((host, port), Handler)
     server.daemon_threads = True
+    server.trust_proxy = trust_proxy
     server.app = app
     return server
 
@@ -580,6 +594,8 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--db", default=str(Path(__file__).parent / "historico.sqlite3"),
                         help="Caminho do banco persistente; nome vazio, :memory: e URIs SQLite file: não são aceitos.")
+    parser.add_argument("--trust-proxy", action="store_true",
+                        help="Atrás de proxy reverso local (Caddy): limita tentativas pelo IP do X-Forwarded-For.")
     args = parser.parse_args()
     try:
         admin_pin, device_key, device_id = settings_from_environment(os.environ)
@@ -590,7 +606,7 @@ def main():
         # Falha ao abrir ou migrar o banco: mensagem clara, sem traceback.
         print(f"Erro: não foi possível abrir ou migrar o banco '{args.db}': {error}", file=sys.stderr)
         sys.exit(1)
-    server = make_server(args.host, args.port, app)
+    server = make_server(args.host, args.port, app, args.trust_proxy)
     print(f"Painel local: http://127.0.0.1:{args.port} | Escutando em {args.host}", flush=True)
     print("Protótipo para LAN. Nenhum ESP32 é simulado automaticamente.", flush=True)
     try:

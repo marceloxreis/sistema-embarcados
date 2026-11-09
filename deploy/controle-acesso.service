@@ -1,0 +1,30 @@
+# Servidor do controle de acesso atrás do Caddy (HTTPS na 443).
+# Escuta só no loopback; quem fala com a internet é o Caddy.
+[Unit]
+Description=Controle de acesso: servidor e painel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=controle
+Group=controle
+EnvironmentFile=/etc/controle-acesso.env
+ExecStart=/usr/bin/python3 /opt/controle-acesso/servidor/server.py --host 127.0.0.1 --port 8080 --db /var/lib/controle-acesso/historico.sqlite3 --trust-proxy
+Restart=on-failure
+RestartSec=3
+StateDirectory=controle-acesso
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

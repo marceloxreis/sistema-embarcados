@@ -1,0 +1,25 @@
+# Modelo usado por deploy/instalar.sh (troca @DOMINIO@, @PAINEL_USUARIO@ e @PAINEL_HASH@).
+{
+	# Só Let's Encrypt: a CAM confia nas raízes ISRG de firmware/Esp32CamRede/ServerCA.h.
+	cert_issuer acme
+}
+
+@DOMINIO@ {
+	# A CAM se autentica com X-Device-Key; o resto (painel e /api/admin) ganha uma
+	# segunda camada de senha no navegador, além do ADMIN_PIN de 10 dígitos.
+	@painel not path /api/device/*
+	basic_auth @painel {
+		@PAINEL_USUARIO@ @PAINEL_HASH@
+	}
+
+	request_body {
+		max_size 512KB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:8080
+}

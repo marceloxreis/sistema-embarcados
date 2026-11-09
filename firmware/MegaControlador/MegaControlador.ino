@@ -506,6 +506,11 @@ void fingerprintTick() {
   }
   if (p == FINGERPRINT_NOFINGER) { waitFingerRemoval = false; return; }
   if (p != FINGERPRINT_OK) {
+    // Diagnóstico de bancada: código cru do getImage (0x01 pacote, 0x03 imagem, 0xFE timeout).
+    // Fora da placa (simulação dos testes no host) não há Serial.
+#ifdef ARDUINO
+    Serial.print(F("DY50 err=0x")); Serial.println(p, HEX);
+#endif
     if (ui != Ui::Access) failEnrollment("Erro de leitura", "Erro de leitura");
     else notice("Falha no leitor", "Tente novamente", true);
     return;
@@ -632,6 +637,8 @@ void displayTick() {
   String a, b;
   bool masked = false;
   uint32_t lockLeft = 0;
+  bool homeAnimated = false;
+  String mirrorA, mirrorB;  // texto do espelho quando a home animada está numa cena com ícones
   if (door.state == DoorState::Alarm) { a = "Feche a porta"; b = door.user ? idText(door.user) : "Sem autorizacao"; }
   else if (noticeActive()) { a = noticeLine1; b = noticeLine2; }
   else if ((lockLeft = keypadLockRemainingMs()) != 0) {
@@ -680,18 +687,50 @@ void displayTick() {
     }
     else if (entry.length()) b += entry;
     else b = fingerprintReady ? "ID cartao dedo" : "ID ou cartao";
+    // Home animada: 4 cenas de 3 s ("Controle acesso", cartão, ID + senha, digital), quadros de 300 ms.
+    // Sem digital pronta, a cena da digital vira a de texto. O espelho da serial fica no texto.
+    if (!entry.length() && storageReady) {
+      auto sp = [](uint8_t n) { String s; while (n--) s += ' '; return s; };
+      const uint32_t t = millis();
+      uint8_t scene = (t / 3000) % 4;
+      if (scene == 3 && !fingerprintReady) scene = 0;
+      const uint8_t f = (t % 3000) / 300;  // quadro 0 a 9
+      // O espelho da serial guarda o texto completo; no LCD, a cena de texto mostra só "Controle acesso".
+      homeAnimated = true; mirrorA = a; mirrorB = b;
+      if (scene == 0) b = "";
+      else if (scene == 1) {
+        // Cartão desliza até o leitor; no fim, o visto.
+        const uint8_t pos = 2 + f;  // coluna 2 a 11
+        a = "Aproxime cartao"; b = sp(pos); b += char(1); b += sp(12 - pos); b += char(2);
+        if (f >= 8) b += char(7);
+      } else if (scene == 2) {
+        // Digitação de exemplo: ID 007 e #, depois a senha em asteriscos.
+        a = "Digite ID+senha"; b = ""; b += char(3); b += ' ';
+        if (f < 3) { b += "ID: "; for (uint8_t i = 0; i <= f; ++i) b += (i < 2 ? '0' : '7'); }
+        else if (f == 3) b += "ID: 007 #";
+        else { b += "Senha: "; for (uint8_t i = 0; i < (f == 9 ? 6 : f - 3); ++i) b += '*'; if (f == 9) b += '#'; }
+      } else if (scene == 3) {
+        // Digital pulsando: o ícone alterna e os anéis abrem e fecham.
+        const uint8_t r = f % 3;
+        a = "Encoste o dedo"; b = sp(7 - r);
+        for (uint8_t i = 0; i < r; ++i) b += '(';
+        b += char(f % 2 ? 5 : 4);
+        for (uint8_t i = 0; i < r; ++i) b += ')';
+      }
+    }
   }
 #if LCD_SERIAL_MIRROR
   // Espelho na serial USB: o mesmo texto do LCD, inclusive quando o LCD está ausente.
 #if SHOW_TYPED_DIGITS
   // Troca só os '*' finais pelos dígitos (mantém o prefixo "ID: " ou "ID 00X: ").
-  const String mb = masked ? b.substring(0, b.length() - entry.length()) + entry : b;
+  const String mb = homeAnimated ? mirrorB : masked ? b.substring(0, b.length() - entry.length()) + entry : b;
 #else
-  const String mb = b; (void)masked;
+  const String mb = homeAnimated ? mirrorB : b; (void)masked;
 #endif
-  if (a != mirrorPrevA || mb != mirrorPrevB) {
-    mirrorPrevA = a; mirrorPrevB = mb;
-    Serial.print(F("LCD| ")); Serial.print(a.substring(0, 16));
+  const String ma = homeAnimated ? mirrorA : a;
+  if (ma != mirrorPrevA || mb != mirrorPrevB) {
+    mirrorPrevA = ma; mirrorPrevB = mb;
+    Serial.print(F("LCD| ")); Serial.print(ma.substring(0, 16));
     Serial.print(F(" | ")); Serial.println(mb.substring(0, 16));
   }
 #endif
@@ -997,6 +1036,19 @@ void setup() {
   pinMode(BUTTON_1, INPUT_PULLUP); pinMode(BUTTON_2, INPUT_PULLUP);
   pinMode(LED_R, OUTPUT); pinMode(LED_G, OUTPUT); pinMode(LED_B, OUTPUT); rgb(false, false, false);
   lcdBoot();
+  {
+    // Ícones da home animada nos slots 1 a 7 da CGRAM (o slot 0 vira '\0' e cortaria a String).
+    static const uint8_t icons[7][8] = {
+      {0x00, 0x1F, 0x1F, 0x11, 0x17, 0x11, 0x1F, 0x00},  // 1 cartão
+      {0x08, 0x04, 0x12, 0x0A, 0x12, 0x04, 0x08, 0x00},  // 2 ondas do leitor
+      {0x00, 0x15, 0x00, 0x15, 0x00, 0x15, 0x00, 0x00},  // 3 teclado
+      {0x0E, 0x11, 0x04, 0x0A, 0x15, 0x15, 0x11, 0x0A},  // 4 digital, quadro A
+      {0x0E, 0x11, 0x0E, 0x11, 0x0A, 0x15, 0x15, 0x0A},  // 5 digital, quadro B
+      {0x0E, 0x11, 0x11, 0x1F, 0x1B, 0x1B, 0x1F, 0x00},  // 6 cadeado
+      {0x00, 0x01, 0x03, 0x16, 0x1C, 0x08, 0x00, 0x00},  // 7 visto
+    };
+    for (uint8_t i = 0; i < 7; ++i) lcd.createChar(i + 1, (uint8_t *)icons[i]);
+  }
   // BootCounter usa região própria da EEPROM (após o journal) e não depende de recover.
   const bool usersRecovered = UserStore::recover(EEPROM);
   const bool bootCounted = BootCounter::next(EEPROM, bootNumber);

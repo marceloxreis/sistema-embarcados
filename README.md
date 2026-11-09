@@ -5,7 +5,8 @@ administração local, indicadores, alertas sonoros, uma foto por acesso autoriz
 e histórico no servidor da rede local.
 
 **Comece por:** [escopo](docs/ESCOPO.md), [lista de materiais](docs/MATERIAIS.md),
-[guia de montagem](docs/MONTAGEM.md) e [roteiro de testes](docs/TESTES.md).
+[guia de montagem](docs/MONTAGEM.md), [roteiro de testes](docs/TESTES.md) e
+[servidor na nuvem com HTTPS](docs/DEPLOY.md).
 
 > **Status:** Os dois sketches compilaram em 30/10/2026 (ver [docs/VALIDACAO.md](docs/VALIDACAO.md));
 > falta validação com as placas e componentes reais. Mantenha `LOCK_MODE=0`
