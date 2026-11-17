@@ -1,4 +1,4 @@
-"""Telas de digitação ("#Confirma *Limpa" / "ID: "), mapa de cores do LED RGB e menu 5 (remover cartão).
+"""Telas de digitação ("#Confirma *Limpa" / "ID: "), mapa de cores do LED RGB e menu administrativo.
 
 Usa as funções reais recortadas do .ino com os dublês de test_mega_tst02 (LED) e
 test_cartao_rfid (teclado, cartão, digital e LCD). Config.h nunca é lido.
@@ -22,17 +22,16 @@ int main() {
  entry = "1"; passo(110300); assert(cor() == "011");
  ui = Ui::AccessPin; entry = ""; passo(110400); assert(cor() == "101");
  entry = "12"; passo(110500); assert(cor() == "101");
- // Menu admin, cadastro (todos os estados), menus 2 a 5: branco
+ // Menu admin, cadastro (todos os estados), menus 2 e 3: branco
  const Ui brancos[] = {Ui::Menu, Ui::RemoveFinger, Ui::FirstFinger, Ui::SecondFinger, Ui::FirstPin,
-   Ui::ConfirmPin, Ui::CardEnroll, Ui::DisableId, Ui::EnableId, Ui::ConfirmStatus, Ui::LinkId,
-   Ui::CardLink, Ui::UnlinkId, Ui::ConfirmUnlink};
+   Ui::ConfirmPin, Ui::DisableId, Ui::EnableId, Ui::ConfirmStatus};
  for (Ui estado : brancos) { ui = estado; passo(now + 10); assert(cor() == "111"); }
  reinicia();
  // Flash de leitura: ciano por 150 ms sobre repouso, branco, magenta e verde
  passo(120300); startReadFlash();
  passo(120300); assert(cor() == "011"); passo(120449); assert(cor() == "011");
  passo(120450); assert(cor() == "000" && !readFlashOn);
- ui = Ui::CardEnroll; startReadFlash(); passo(120500); assert(cor() == "011");
+ ui = Ui::FirstPin; startReadFlash(); passo(120500); assert(cor() == "011");
  passo(120650); assert(cor() == "111");
  ui = Ui::AccessPin; startReadFlash(); passo(120700); assert(cor() == "011");
  passo(120850); assert(cor() == "101");
@@ -73,7 +72,7 @@ class CoresLedTests(unittest.TestCase):
         tst02._executar(tst02.PREFIXO_HW + tst02._pecas_hw(src) + tst02.AJUDANTES_HW + MAIN_CORES)
 
 
-# ---------------------------------------------------------------- telas, flash na leitura e menu 5
+# ---------------------------------------------------------------- telas, flash na leitura e menu
 def _timeout():
     src = cartao._sketch()
     return 'constexpr uint32_t UI_TIMEOUT_MS = 60000;\n' + cartao._trecho(src, '// Telas de administração (menu', 'void loop() {')
@@ -87,7 +86,7 @@ TELAS = r'''
 int main() {
  storageReady = true; fingerprintReady = true; rfidReady = true;
  door.begin(true, now); resetUi(); noticeDuration = 0;
- now = (now / 12000 + 1) * 12000; tela("Controle acesso", "");
+ now = (now / 9000 + 1) * 9000; tela("Controle acesso", "");
  entry = "1"; tela("#Confirma *Limpa", "ID: 1");
  entry = "12"; tela("#Confirma *Limpa", "ID: 12");
  entry = "123"; tela("#Confirma *Limpa", "ID: 123");
@@ -101,10 +100,8 @@ int main() {
  entry = "123456"; tela("#Confirma *Limpa", "ID 001: ******");
  resetUi(); ui = Ui::Menu;
  now = 20000; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
- now = 22500; tela("4 Vincula cartao", "5 Remove cartao");
+ now = 22500; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
  now = 25000; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
- ui = Ui::UnlinkId; entry = "7"; tela("Desvincular ID:", "7");
- ui = Ui::ConfirmUnlink; pendingId = 7; tela("Remover cartao?", "#Sim *Nao");
  resetUi();
  return 0;
 }
@@ -132,79 +129,16 @@ int main() {
 }
 '''
 
-MENU5 = r'''
-int main() {
- rfidReady = true; storageReady = true; fingerprintReady = true;
- UserRecord a = {}; a.active = 1; assert(saveRecord(1, a)); assert(saveRecord(2, a));
- UserRecord b = {}; b.active = 0; assert(saveRecord(3, b));
- CardStore::Tag t1 = {4, {1, 2, 3, 4, 0, 0, 0}}, t3 = {4, {5, 6, 7, 8, 0, 0, 0}};
- assert(CardStore::write(EEPROM, 1, t1) && CardStore::write(EEPROM, 3, t3));
- CardStore::Tag lido;
- // '5' no menu abre o pedido do ID (até 3 dígitos)
- door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear();
- ui = Ui::Menu; handleKey('5');
- assert(ui == Ui::UnlinkId && entry == "");
- digita("0012"); assert(entry == "001");
- // ID inexistente: aviso de erro e continua pedindo
- entry = ""; digita("9"); handleKey('#');
- assert(ui == Ui::UnlinkId && noticeLine1 == "ID inexistente" && noticeError && audits.empty());
- // ID sem cartão: "Sem cartao" / "ID 002" e continua pedindo
- noticeDuration = 0; digita("2"); handleKey('#');
- assert(ui == Ui::UnlinkId && noticeLine1 == "Sem cartao" && noticeLine2 == "ID 002" && noticeError && audits.empty());
- // ID com cartão: confirmação; dígitos são ignorados
- noticeDuration = 0; digita("1"); handleKey('#');
- assert(ui == Ui::ConfirmUnlink && pendingId == 1);
- tela("Remover cartao?", "#Sim *Nao");
- handleKey('7'); assert(ui == Ui::ConfirmUnlink && entry == "");
- // '#' confirma: apaga o slot, audita card_unlinked (admin) e avisa
- handleKey('#');
- assert(ui == Ui::Access && !CardStore::read(EEPROM, 1, lido) && CardStore::read(EEPROM, 3, lido));
- assert(audits.size() == 1 && audits[0] == "card_unlinked|1|admin|");
- assert(noticeLine1 == "Cartao removido" && noticeLine2 == "ID 001" && !noticeError);
- tela("Cartao removido", "ID 001");
- assert(exists(1) && activeUser(1));   // só o cartão sai; o usuário continua
- // '*' cancela sem apagar nem auditar (usuário inativo também pode ter o cartão removido)
- door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear();
- ui = Ui::Menu; handleKey('5'); digita("3"); handleKey('#');
- assert(ui == Ui::ConfirmUnlink && pendingId == 3);
- handleKey('*');
- assert(ui == Ui::Access && noticeLine1 == "Cancelado" && audits.empty() && CardStore::read(EEPROM, 3, lido));
- // 'D' também cancela
- noticeDuration = 0; ui = Ui::Menu; handleKey('5'); digita("3"); handleKey('#');
- assert(ui == Ui::ConfirmUnlink); handleKey('D');
- assert(ui == Ui::Access && noticeLine1 == "Cancelado" && audits.empty() && CardStore::read(EEPROM, 3, lido));
- // timeout de UI: sem tecla por UI_TIMEOUT_MS volta ao repouso sem apagar
- noticeDuration = 0; ui = Ui::Menu; handleKey('5'); digita("3"); handleKey('#');
- assert(ui == Ui::ConfirmUnlink);
- now += UI_TIMEOUT_MS - 1; uiTimeoutTick(); assert(ui == Ui::ConfirmUnlink);
- now += 1; uiTimeoutTick();
- assert(ui == Ui::Access && noticeLine1 == "Tempo esgotado" && audits.empty() && CardStore::read(EEPROM, 3, lido));
- // timeout também na tela do ID
- noticeDuration = 0; ui = Ui::Menu; handleKey('5'); assert(ui == Ui::UnlinkId);
- now += UI_TIMEOUT_MS; uiTimeoutTick(); assert(ui == Ui::Access);
- // o leitor de digital não é consultado nas telas do menu 5
- noticeDuration = 0; ui = Ui::UnlinkId; int antes = finger.scans; now += 1000; fingerprintTick();
- assert(finger.scans == antes);
- ui = Ui::ConfirmUnlink; now += 1000; fingerprintTick(); assert(finger.scans == antes);
- return 0;
-}
-'''
-
-
-class TelasMenu5Tests(unittest.TestCase):
+class TelasMenuTests(unittest.TestCase):
     def test_telas_de_digitacao_e_menu(self):
         _rodar(TELAS)
 
     def test_flash_ao_ler_cartao_e_capturar_digital(self):
         _rodar(FLASH)
 
-    def test_menu_5_remove_cartao(self):
-        _rodar(MENU5)
-
     def test_textos_novos_cabem_em_16_colunas(self):
         src = cartao._sketch()
-        for texto in ('#Confirma *Limpa', 'ID: ', '5 Remove cartao', '4 Vincula cartao', 'Desvincular ID:',
-                      'Remover cartao?', '#Sim *Nao', 'Cartao removido', 'Sem cartao', 'Cartao mantido'):
+        for texto in ('#Confirma *Limpa', 'ID: '):
             self.assertIn('"%s"' % texto, src, texto)
             self.assertLessEqual(len(texto), 16, texto)
         self.assertLessEqual(len('ID: ') + 10, 16)

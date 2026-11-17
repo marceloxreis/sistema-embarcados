@@ -73,10 +73,10 @@ int main() {
  door.begin(true,now); resetUi(); noticeDuration=0;
  // (a) primeira chamada: o texto sai na serial e o LCD é desenhado (16+16 colunas)
  displayTick();
- assert(Serial.log=="LCD| Controle acesso | ID cartao dedo\n" && lcd.writes==32);
+ assert(Serial.log=="LCD| Controle acesso | ID ou digital\n" && lcd.writes==32);
  // (b) sem mudanca no texto, nada e reimpresso
  now+=500; displayTick();
- assert(Serial.log=="LCD| Controle acesso | ID cartao dedo\n" && lcd.writes==32);
+ assert(Serial.log=="LCD| Controle acesso | ID ou digital\n" && lcd.writes==32);
  // (c) senha em digitacao aparece so como '*'
  entry="12"; now+=500; displayTick();
  assert(Serial.log.find("LCD| #Confirma *Limpa | ID: 12\n")!=std::string::npos);

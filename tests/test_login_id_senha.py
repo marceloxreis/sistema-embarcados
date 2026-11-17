@@ -326,7 +326,7 @@ class TextosLcdTests(unittest.TestCase):
         self.assertTrue(len(linhas) >= 30, len(linhas))
         longos = [t for t in linhas if len(t) > 16]
         self.assertEqual(longos, [])
-        for esperado in ('Teclado travado', 'Controle acesso', 'ID cartao dedo', 'ID ou cartao', '#Confirma *Limpa', 'Entrada invalida', 'ID e # ou admin', 'Use 6 digitos'):
+        for esperado in ('Teclado travado', 'Controle acesso', 'ID ou digital', 'Digite o ID', '#Confirma *Limpa', 'Entrada invalida', 'ID e # ou admin', 'Use 6 digitos'):
             self.assertIn(esperado, linhas)
         self.assertIn('"Aguarde %lu s"', corpo)
         self.assertIn('idText(pendingId) + ": "', corpo)

@@ -379,7 +379,6 @@ void handleKey(char key) {
     // D cancela administração/cadastro. Não anuncia cancelamento de um acesso liberado.
     return;
   }
-  if (key == '*' && (ui == Ui::CardLink || ui == Ui::ConfirmUnlink)) { resetUi(); notice("Cancelado", ""); return; }
   if (key == '*') {
     // B3: na senha, '*' com entrada vazia volta à tela de ID; com dígitos, só limpa.
     if (ui == Ui::AccessPin && entry.length() == 0) { ui = Ui::Access; pendingId = 0; }
@@ -390,22 +389,6 @@ void handleKey(char key) {
     if (key == '2' || key == '3') {
       enableRequested = key == '3'; ui = enableRequested ? Ui::EnableId : Ui::DisableId;
       entry = "";
-    }
-    if (key == '4') { ui = Ui::LinkId; entry = ""; }
-    if (key == '5') { ui = Ui::UnlinkId; entry = ""; }
-    return;
-  }
-  if (ui == Ui::ConfirmUnlink) {
-    // Menu 5: '#' apaga o cartão do ID; '*' e 'D' cancelam (acima); dígitos são ignorados.
-    if (key == '#') {
-      const uint16_t id = pendingId;
-      const uint32_t generation = doorGeneration;
-      ServicedEeprom storage; CardStore::Tag tag;
-      const bool ok = CardStore::clear(storage, uint8_t(id)) && !CardStore::read(EEPROM, uint8_t(id), tag);
-      if (ok) audit("card_unlinked", id, "admin");
-      resetUi();
-      if (generation == doorGeneration && door.state == DoorState::Idle)
-        notice(ok ? "Cartao removido" : "Erro na memoria", ok ? idText(id) : String("Cartao mantido"), !ok);
     }
     return;
   }
@@ -421,13 +404,8 @@ void handleKey(char key) {
     return;
   }
   if (ui == Ui::FirstFinger || ui == Ui::RemoveFinger || ui == Ui::SecondFinger) return;
-  if (ui == Ui::CardEnroll || ui == Ui::CardLink) {
-    // Cadastro: # pula o cartão e segue para a senha. Vincular: só D e * agem (acima).
-    if (key == '#' && ui == Ui::CardEnroll) { ui = Ui::FirstPin; entry = ""; uiTouched = millis(); }
-    return;
-  }
   if (key >= '0' && key <= '9') {
-    const size_t limit = ui == Ui::Access ? 10 : ((ui == Ui::DisableId || ui == Ui::EnableId || ui == Ui::LinkId || ui == Ui::UnlinkId) ? 3 : 6);
+    const size_t limit = ui == Ui::Access ? 10 : ((ui == Ui::DisableId || ui == Ui::EnableId) ? 3 : 6);
     if (entry.length() < limit) entry += key;
     return;
   }
@@ -459,18 +437,6 @@ void handleKey(char key) {
     pendingId = entry.toInt(); entry = "";
     if (!exists(pendingId)) { notice("ID inexistente", "Digite novamente", true); return; }
     ui = Ui::ConfirmStatus;
-  } else if (ui == Ui::LinkId) {
-    // Vincular cartão: o ID pode estar ativo ou inativo.
-    pendingId = entry.toInt(); entry = "";
-    if (!exists(pendingId)) { notice("ID inexistente", "Digite novamente", true); return; }
-    ui = Ui::CardLink; uiTouched = millis();
-  } else if (ui == Ui::UnlinkId) {
-    // Remover cartão (menu 5): ID inexistente ou sem cartão avisa e pede o ID de novo.
-    pendingId = entry.toInt(); entry = "";
-    CardStore::Tag tag;
-    if (!exists(pendingId)) { notice("ID inexistente", "Digite novamente", true); return; }
-    if (!CardStore::read(EEPROM, uint8_t(pendingId), tag)) { notice("Sem cartao", idText(pendingId), true); return; }
-    ui = Ui::ConfirmUnlink; uiTouched = millis();
   }
 }
 // Senha parcial no teclado expira após 30 s sem tecla; sem aviso nem evento.
@@ -486,8 +452,7 @@ void fingerprintTick() {
   lastFingerPoll = millis();
   if (ui == Ui::Menu || ui == Ui::FirstPin || ui == Ui::ConfirmPin ||
       ui == Ui::DisableId || ui == Ui::EnableId || ui == Ui::ConfirmStatus ||
-      ui == Ui::LinkId || ui == Ui::CardEnroll || ui == Ui::CardLink || ui == Ui::AccessPin ||
-      ui == Ui::UnlinkId || ui == Ui::ConfirmUnlink) return;
+      ui == Ui::AccessPin) return;
   if (door.state != DoorState::Idle || !door.closed) return;
   const Ui startedUi = ui;
   const uint32_t generation = doorGeneration;
@@ -553,7 +518,7 @@ void fingerprintTick() {
     if (p == FINGERPRINT_PACKETRECIEVEERR) fingerprintReady = false;
     if (ui != startedUi || doorGeneration != generation || door.state != DoorState::Idle || !door.closed) { waitFingerRemoval = true; return; }
     if (p != FINGERPRINT_OK) { failEnrollment("Digitais diferem", "Digitais diferem"); return; }
-    ui = Ui::CardEnroll; entry = ""; cardPending = false; uiTouched = millis();
+    ui = Ui::FirstPin; entry = ""; uiTouched = millis();
   } else {
     waitFingerRemoval = true;
     p = finger.fingerFastSearch();
@@ -650,9 +615,7 @@ void displayTick() {
   else if (ui != Ui::Access) {
     switch (ui) {
       case Ui::Menu:
-        // Duas telas alternadas a cada 2,5 s: 1-3 e D na primeira; cartão (4 e 5) na segunda.
-        if ((millis() / 2500) % 2) { a = "4 Vincula cartao"; b = "5 Remove cartao"; }
-        else { a = "1 Novo 2 Inativ."; b = "3 Reativ. D Sair"; }
+        a = "1 Novo 2 Inativ."; b = "3 Reativ. D Sair";
         break;
       case Ui::RemoveFinger: a = "Cadastrando"; b = "Retire o dedo"; break;
       case Ui::FirstFinger: a = "Cadastrando"; b = "Coloque o dedo"; break;
@@ -661,11 +624,6 @@ void displayTick() {
       case Ui::ConfirmPin: a = "Repita senha (6)"; break;
       case Ui::DisableId: a = "Desativar ID:"; b = entry; break;
       case Ui::EnableId: a = "Reativar ID:"; b = entry; break;
-      case Ui::LinkId: a = "Vincular ID:"; b = entry; break;
-      case Ui::UnlinkId: a = "Desvincular ID:"; b = entry; break;
-      case Ui::ConfirmUnlink: a = "Remover cartao?"; b = "#Sim *Nao"; break;
-      case Ui::CardEnroll: a = "Aproxime cartao"; b = "# pula"; break;
-      case Ui::CardLink: a = "Aproxime cartao"; b = idText(pendingId) + " * cancela"; break;
       case Ui::AccessPin: a = "#Confirma *Limpa"; b = idText(pendingId) + ": "; break;
       case Ui::ConfirmStatus: a = idText(pendingId) + (enableRequested ? " Reativar?" : " Inativar?"); b = "# Sim D Cancelar"; break;
       default: break;
@@ -686,30 +644,25 @@ void displayTick() {
       masked = entry.length() > 3;
     }
     else if (entry.length()) b += entry;
-    else b = fingerprintReady ? "ID cartao dedo" : "ID ou cartao";
-    // Home animada: 4 cenas de 3 s ("Controle acesso", cartão, ID + senha, digital), quadros de 300 ms.
+    else b = fingerprintReady ? "ID ou digital" : "Digite o ID";
+    // Home animada: 3 cenas de 3 s ("Controle acesso", ID + senha, digital), quadros de 300 ms.
     // Sem digital pronta, a cena da digital vira a de texto. O espelho da serial fica no texto.
     if (!entry.length() && storageReady) {
       auto sp = [](uint8_t n) { String s; while (n--) s += ' '; return s; };
       const uint32_t t = millis();
-      uint8_t scene = (t / 3000) % 4;
-      if (scene == 3 && !fingerprintReady) scene = 0;
+      uint8_t scene = (t / 3000) % 3;
+      if (scene == 2 && !fingerprintReady) scene = 0;
       const uint8_t f = (t % 3000) / 300;  // quadro 0 a 9
       // O espelho da serial guarda o texto completo; no LCD, a cena de texto mostra só "Controle acesso".
       homeAnimated = true; mirrorA = a; mirrorB = b;
       if (scene == 0) b = "";
       else if (scene == 1) {
-        // Cartão desliza até o leitor; no fim, o visto.
-        const uint8_t pos = 2 + f;  // coluna 2 a 11
-        a = "Aproxime cartao"; b = sp(pos); b += char(1); b += sp(12 - pos); b += char(2);
-        if (f >= 8) b += char(7);
-      } else if (scene == 2) {
         // Digitação de exemplo: ID 007 e #, depois a senha em asteriscos.
         a = "Digite ID+senha"; b = ""; b += char(3); b += ' ';
         if (f < 3) { b += "ID: "; for (uint8_t i = 0; i <= f; ++i) b += (i < 2 ? '0' : '7'); }
         else if (f == 3) b += "ID: 007 #";
         else { b += "Senha: "; for (uint8_t i = 0; i < (f == 9 ? 6 : f - 3); ++i) b += '*'; if (f == 9) b += '#'; }
-      } else if (scene == 3) {
+      } else if (scene == 2) {
         // Digital pulsando: o ícone alterna e os anéis abrem e fecham.
         const uint8_t r = f % 3;
         a = "Encoste o dedo"; b = sp(7 - r);

@@ -1,4 +1,4 @@
-"""Cartão RFID (RC522) no sketch Mega: acesso, cadastro, menu 4, textos e protocolo.
+"""Cartão RFID (RC522) no sketch Mega: acesso, cadastro e menu sem cartão, textos e protocolo.
 
 As funções reais do .ino são recortadas e compiladas com dublês (EEPROM, millis,
 porta, MFRC522 e Serial). Config.h nunca é lido: usa-se Config.example.h.
@@ -175,90 +175,39 @@ int main() {
 }
 '''
 
-# ---------------------------------------------------------------- passo do cadastro
+# ---------------------------------------------------------------- cadastro sem cartão
 CADASTRO = r'''
 int main() {
- rfidReady = true; storageReady = true; fingerprintReady = true;
- UserRecord outro = {}; outro.active = 1; assert(saveRecord(1, outro));
- CardStore::Tag dono = {4, {0xde, 0xad, 0xbe, 0xef, 0, 0, 0}};
- assert(CardStore::write(EEPROM, 1, dono));
- // (a) '#' pula o cartão: segue para a senha, sem gravar nada
- door.begin(true, now); resetUi(); noticeDuration = 0; pendingId = 3; ui = Ui::CardEnroll;
- handleKey('#');
- assert(ui == Ui::FirstPin && !cardPending && entry == "");
- // (b) cartão livre: fica pendente, sem gravar ainda
- door.begin(true, now); resetUi(); noticeDuration = 0; pendingId = 3; ui = Ui::CardEnroll; audits.clear();
- apresenta({5, 6, 7, 8}); now += 200; cardTick();
- const uint8_t c5[4] = {5, 6, 7, 8};
- assert(ui == Ui::FirstPin && cardPending && pendingCard.size == 4 && noticeLine1 == "Cartao lido");
- assert(CardStore::find(EEPROM, c5, 4) == 0 && !exists(3));
- // (c) senha e confirmação gravam o usuário e o cartão juntos
- noticeDuration = 0;
+ storageReady = true; fingerprintReady = true; rfidReady = true;
+ door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear(); waitFingerRemoval = false; pendingId = 3;
+ // 2a digital confirmada: segue direto para a senha, sem passo de cartão
+ ui = Ui::SecondFinger; finger.imageStatus = FINGERPRINT_OK; now += 1000; fingerprintTick();
+ assert(ui == Ui::FirstPin && entry == "");
+ tela("Crie senha (6)", "");
+ // na senha o leitor de cartão não é consultado
+ int antes = rfid.newChecks; now += 200; lastRfidPoll = 0; cardTick();
+ assert(ui == Ui::FirstPin && rfid.newChecks == antes);
+ // senha e confirmação cadastram o usuário
  digita("654321"); handleKey('#'); digita("654321"); handleKey('#');
- assert(ui == Ui::Access && !cardPending && exists(3) && lastId == 3);
- assert(CardStore::find(EEPROM, c5, 4) == 3);
+ assert(ui == Ui::Access && exists(3) && lastId == 3);
  assert(audits.size() == 1 && audits[0] == "user_enrolled|3|admin|");
- // (d) cartão de outro usuário: aviso e continua esperando; '#' pula depois
- door.begin(true, now); resetUi(); noticeDuration = 0; pendingId = 4; ui = Ui::CardEnroll;
- apresenta({0xde, 0xad, 0xbe, 0xef}); now += 200; cardTick();
- assert(ui == Ui::CardEnroll && !cardPending && noticeLine1 == "Cartao em uso" && noticeError);
- noticeDuration = 0; handleKey('#');
- assert(ui == Ui::FirstPin && !cardPending);
- // (e) D cancela e descarta o cartão pendente
- door.begin(true, now); resetUi(); noticeDuration = 0; ui = Ui::FirstPin; cardPending = true; pendingCard = dono;
- handleKey('D');
- assert(ui == Ui::Access && !cardPending);
- // (f) o cadastro gravado não deixa o cartão de outro usuário livre: busca confirma o dono
- assert(CardStore::find(EEPROM, c5, 4) == 3 && CardStore::find(EEPROM, dono.uid, 4) == 1);
  return 0;
 }
 '''
 
-# ---------------------------------------------------------------- menu 4
-MENU4 = r'''
+# ---------------------------------------------------------------- menu sem cartão
+MENU_SEM_CARTAO = r'''
 int main() {
- rfidReady = true; storageReady = true; fingerprintReady = true;
- UserRecord a = {}; a.active = 1; assert(saveRecord(1, a));
- UserRecord b = {}; b.active = 0; assert(saveRecord(2, b));
- CardStore::Tag dono = {4, {0xde, 0xad, 0xbe, 0xef, 0, 0, 0}};
- assert(CardStore::write(EEPROM, 1, dono));
- const uint8_t c5[4] = {5, 6, 7, 8};
- // Menu '4' abre a vinculação
+ storageReady = true; fingerprintReady = true; rfidReady = true;
  door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear();
- ui = Ui::Menu; handleKey('4');
- assert(ui == Ui::LinkId && entry == "");
- // ID inexistente
- digita("9"); handleKey('#');
- assert(ui == Ui::LinkId && noticeLine1 == "ID inexistente" && noticeError);
- noticeDuration = 0; entry = "";
- // ID inativo também pode receber cartão
- digita("2"); handleKey('#');
- assert(ui == Ui::CardLink && pendingId == 2 && entry == "");
- tela("Aproxime cartao", "ID 002 * cancela");
- // cartão de outro usuário é recusado; a vinculação continua
- apresenta({0xde, 0xad, 0xbe, 0xef}); now += 200; cardTick();
- assert(ui == Ui::CardLink && noticeLine1 == "Cartao em uso" && noticeError && audits.empty());
- assert(CardStore::find(EEPROM, dono.uid, 4) == 1);
- // cartão livre: grava, audita (admin) e volta ao acesso
- noticeDuration = 0; apresenta({5, 6, 7, 8}); now += 200; cardTick();
- assert(ui == Ui::Access && CardStore::find(EEPROM, c5, 4) == 2);
- assert(audits.size() == 1 && audits[0] == "card_linked|2|admin|");
- assert(noticeLine1 == "Cartao vinculado" && noticeLine2 == "ID 002");
- // o próprio dono pode regravar o cartão dele (sem conflito)
- door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear();
- ui = Ui::CardLink; pendingId = 1; apresenta({0xde, 0xad, 0xbe, 0xef}); now += 200; cardTick();
- assert(ui == Ui::Access && CardStore::find(EEPROM, dono.uid, 4) == 1);
- assert(audits.size() == 1 && audits[0] == "card_linked|1|admin|");
- // '*' cancela a vinculação, sem gravar nem auditar
- door.begin(true, now); resetUi(); noticeDuration = 0; audits.clear();
- ui = Ui::Menu; handleKey('4'); digita("1"); handleKey('#');
- assert(ui == Ui::CardLink);
- noticeDuration = 0; handleKey('*');
- assert(ui == Ui::Access && noticeLine1 == "Cancelado" && audits.empty());
- // D também cancela
- door.begin(true, now); resetUi(); noticeDuration = 0; ui = Ui::CardLink; pendingId = 1;
- noticeDuration = 0; handleKey('D');
- assert(ui == Ui::Access && noticeLine1 == "Cancelado");
+ ui = Ui::Menu;
+ // teclas 4 e 5 não fazem nada: nem vinculação nem remoção de cartão
+ handleKey('4'); assert(ui == Ui::Menu && entry == "");
+ handleKey('5'); assert(ui == Ui::Menu && entry == "");
+ digita("9"); handleKey('#'); assert(ui == Ui::Menu && entry == "" && audits.empty());
+ // a tela do menu é fixa, sem alternância
+ tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
+ now += 2500; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
  return 0;
 }
 '''
@@ -268,15 +217,10 @@ TELAS = r'''
 int main() {
  storageReady = true; fingerprintReady = true; rfidReady = true;
  door.begin(true, now); resetUi(); noticeDuration = 0;
- ui = Ui::CardEnroll; tela("Aproxime cartao", "# pula");
- ui = Ui::LinkId; entry = "12"; tela("Vincular ID:", "12");
- ui = Ui::CardLink; pendingId = 2; tela("Aproxime cartao", "ID 002 * cancela");
  ui = Ui::Menu; now = 20000; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
- now = 22500; tela("4 Vincula cartao", "5 Remove cartao");
+ now = 22500; tela("1 Novo 2 Inativ.", "3 Reativ. D Sair");
  ui = Ui::Access; resetUi(); noticeDuration = 0;
  notice("Cartao em uso", "Use outro", true); tela("Cartao em uso", "Use outro");
- noticeDuration = 0;
- notice("Cartao lido", "Crie senha (6)", false, 1000); tela("Cartao lido", "Crie senha (6)");
  noticeDuration = 0;
  notice("Cartao vinculado", "ID 002"); tela("Cartao vinculado", "ID 002");
  noticeDuration = 0;
@@ -346,11 +290,11 @@ class CartaoRfidTests(unittest.TestCase):
     def test_acesso_por_cartao(self):
         _executar(ACESSO)
 
-    def test_passo_do_cadastro_com_cartao(self):
+    def test_cadastro_segue_direto_para_senha(self):
         _executar(CADASTRO)
 
-    def test_menu_4_vincula_cartao(self):
-        _executar(MENU4)
+    def test_teclas_4_e_5_nao_fazem_nada_no_menu(self):
+        _executar(MENU_SEM_CARTAO)
 
     def test_telas_novas_cabem_em_16_colunas(self):
         _executar(TELAS)
@@ -396,14 +340,15 @@ class CartaoProtocoloTests(unittest.TestCase):
 
     def test_textos_novos_cabem_no_lcd(self):
         mega = _sketch()
-        textos = ['Aproxime cartao', '# pula', 'Vincular ID:', 'Cartao em uso', 'Use outro',
-                  'Cartao lido', 'Crie senha (6)', 'Cartao vinculado', 'Cartao invalido',
-                  'Erro na memoria', 'Cartao nao salvo', 'Cartao desconh.', '4 Vincula cartao',
-                  '5 Remove cartao', '1 Novo 2 Inativ.', '3 Reativ. D Sair', 'Cancelado', 'ID inexistente',
-                  ' * cancela']
+        textos = ['Cartao em uso', 'Use outro', 'Cartao lido', 'Crie senha (6)', 'Cartao vinculado',
+                  'Cartao invalido', 'Erro na memoria', 'Cartao nao salvo', 'Cartao desconh.',
+                  '1 Novo 2 Inativ.', '3 Reativ. D Sair', 'Cancelado', 'ID inexistente']
         for texto in textos:
-            self.assertLessEqual(len(texto) + (6 if texto == ' * cancela' else 0), 16, texto)
+            self.assertLessEqual(len(texto), 16, texto)
             self.assertIn('"%s"' % texto, mega, texto)
+        # Cadastro sem cartão e menu sem vinculação: essas telas não existem mais.
+        self.assertNotIn('"Aproxime cartao"', mega)
+        self.assertNotIn('4 Vincula cartao', mega)
 
     def test_config_example_documenta_pinos_do_rc522(self):
         exemplo = (MEGA / 'Config.example.h').read_text(encoding='utf-8')
