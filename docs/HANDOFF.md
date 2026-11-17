@@ -1,4 +1,4 @@
-# Handoff: controle de acesso ESP32 (estado em 09/11/2026; sessão 10 em 09/11/2026: Mega pela USB pelo colega, PR #1 mergeado; sessão 9 em 06/11/2026: teclado novo, RC522, ID+senha, gravação do Mega pela CAM, diodo da fechadura e correções após o pulso; sessão 8 em 06/11/2026: rede da casa, IP fixo e primeira OTA; sessão 7 em 05/11/2026: rede nova e diagramas; sessão 6 em 04/11/2026; sessão 5 em 03/11/2026; sessões 4 e continuação em 02/11/2026, bancada; continuação da tarde de 03/11/2026 na seção 4)
+# Handoff: controle de acesso ESP32 (estado em 14/11/2026; sessão 12 em 13/11/2026: CAM regravada pela ponte do Mega 1, rede só local, OTA e gravação do Mega pela CAM verificadas; sessão 11 em 11/11/2026: Mega 1 queimado no VIN, Mega 3, remontagem e remoção do cartão; sessão 10 em 09/11/2026: Mega pela USB pelo colega, PR #1 mergeado; sessão 9 em 06/11/2026: teclado novo, RC522, ID+senha, gravação do Mega pela CAM, diodo da fechadura e correções após o pulso; sessão 8 em 06/11/2026: rede da casa, IP fixo e primeira OTA; sessão 7 em 05/11/2026: rede nova e diagramas; sessão 6 em 04/11/2026; sessão 5 em 03/11/2026; sessões 4 e continuação em 02/11/2026, bancada; continuação da tarde de 03/11/2026 na seção 4)
 
 Estado atual único. Substitui os handoffs anteriores. Use este arquivo como
 ponto de partida; `docs/HANDOFF-REVISAO-OPUS.md` é histórico da revisão.
@@ -22,7 +22,7 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 
 ## 2. Regras do dono
 
-- `LOCK_MODE=0` até o ensaio da fechadura (`docs/MONTAGEM.md`, seção 6) (fechadura ensaiada em 06/11/2026; desde então o Mega roda com LOCK_MODE=1, ver seção 4, sessão 9).
+- `LOCK_MODE=0` até o ensaio da fechadura (`docs/MONTAGEM.md`, seção 6) (superado: fechadura ensaiada em 06/11/2026; desde então o Mega roda com LOCK_MODE=1, inclusive o Mega 3 na sessão 11).
 - Não gravar placas, não fazer commit nem push sem coordenar com o dono.
 - Marcar toda evidência como: verificado em host, verificado em hardware, compilado, simulado, análise de código, estimativa ou não verificado.
 - Em hardware, foram verificados em 30/10/2026 (noite) o passo 3 da bancada (Mega pelo USB, sem LCD) e a matriz do teclado 4x4 por continuidade. A leitura do teclado pelo Mega não foi verificada em 30/10/2026; foi verificada em 02/11/2026 (sessão 4, seção 4). Em 02/11/2026 também foram verificados o buzzer ativo, o circuito do buzzer com BC546 (acionamento pelo firmware verificado depois, na continuação de 02/11/2026) e os resistores medidos. Na mesma continuação: DY50 comunicando (dy50=ok), cadastro, acesso pela digital e pela senha e buzzer pelo firmware, verificados em hardware. Simulação não é confirmação física.
@@ -58,6 +58,8 @@ A versão ESP32 DevKit foi removida em 30/10/2026; é recuperável pelo commit
 - 06/11/2026 (sessão 9): commits `160534d` (RC522 como terceiro método de acesso, login por ID + senha e bloqueio do teclado) e `9d3bed2` (gravação do Mega pela ESP32-CAM, STK500v2 pela rede, com `scripts/gravar-mega-pela-cam.py`). Textos novos do LCD e piscada azul do LED em 10 s: mudança em andamento em `firmware/MegaControlador/MegaControlador.ino` por outro agente, não commitada quando este registro foi escrito (git status: `.ino` do Mega e testes `test_login_id_senha.py`, `test_mega_display.py` e `test_mega_tst02.py` modificados pelo outro agente). Docs da sessão 9 (`HANDOFF.md`, `VALIDACAO.md`) não commitados. (Superado na noite de 06/11: ver item seguinte.) O zip `handoff-bancada-2026-11-06` (bancada do amigo do dono) não é versionado.
 - 06/11/2026 (sessão 9, noite): `bf608b8` (textos do LCD, LED de repouso a cada 10 s e handoff), `99fcc71` (reinício do RC522 e do DY50 após o pulso da fechadura; debounce de 200 ms nos sensores de porta) e `b50bd0b` (telas do ID, mapa de cores do LED, menu 5 e evento `card_unlinked`). Gravados no Mega: até `bf608b8`. `99fcc71` e `b50bd0b` NÃO gravados no Mega nem na CAM. Docs do fim da sessão 9 em commit próprio (ver git log).
 - 09/11/2026 (sessão 10): PR #1 `feat/deploy-nuvem-https` (12 commits, do colega Josh) mergeado na `main` pelo dono como merge commit `1111979` (relato do dono). Mega gravado pela USB a partir desse branch, então roda o código da `main`, com `LOCK_MODE=1` e `ADMIN_PIN` novo de 6 dígitos definido pelo Josh (a trocar, seção 7) (gravação: verificado em hardware, seção 4). CAM NÃO gravada com o firmware HTTPS: segue com o firmware antigo, sem HTTPS (7 tentativas de OTA pelo Wi-Fi falharam; relato do dono).
+- 11/11/2026 (sessão 11): nenhum commit. HEAD 242f60d + 8 arquivos modificados (ver seção 9). Placa de bancada: Mega 3, não o Mega 1 (queimado no VIN). ADMIN_PIN do Mega trocado no Config.h local (relato do dono; valor não registrado).
+- 13/11/2026 (sessão 12): nenhum commit. HEAD 242f60d com os mesmos 8 arquivos modificados da sessão 11 (verificado em host, `git status --short` em 14/11/2026): `firmware/MegaControlador/MegaControlador.ino`, cinco arquivos de `tests/` e `docs/HANDOFF.md` e `docs/VALIDACAO.md` (estes dois docs continuam sendo editados). Nenhum firmware versionado foi alterado nesta sessão; só os `Config.h` locais da CAM e do Mega, que não são versionados (relato do dono). O atalho do servidor fica fora do repositório (seção 4, sessão 12).
 
 ## 4. O que foi feito em 30/10/2026
 
@@ -618,7 +620,114 @@ Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma se
 - Sem problema crítico. Itens abertos na seção 7 (tela de repouso sem indicar digital fora, pilha da `networkTask`, ícones em SRAM, primeira requisição TLS lenta após queda de Wi-Fi, `deploy/instalar.sh`).
 - Suíte completa após o merge não executada nesta sessão (não verificado).
 
-## 5. Verificação (30/10/2026, 02/11/2026, 03/11/2026, 04/11/2026, 06/11/2026 e 09/11/2026, sessões 8, 9 e 10)
+### Sessão 11 (11/11/2026): Mega queimado no VIN, Mega 3, remontagem completa e remoção do cartão
+
+Bancada com o dono. Nenhuma senha, PIN ou chave registrada aqui além do que o dono decidiu (ver "Credenciais").
+
+**Incidente: Mega 1 queimado no VIN (relato do dono; parte verificada em hardware)**
+- Ao ligar a fonte 12 V na tomada (bancada do colega, Mega 1 pelo VIN a 12 V, fechadura desconectada), saiu fumaça. O dono viu um componente estufado ao lado da entrada redonda (regulador de 5 V, pela descrição "o de alimentação").
+- O Mega 1 continua vivo pelo USB: `BOOT boot=703 storage=ok dy50=indisponivel rfid=indisponivel lock_mode=1` (verificado em hardware). O ATmega e o CH340 sobreviveram; o caminho do VIN está danificado.
+- Causa: não determinada. A falta da fechadura sozinha não explica (análise de circuito). Suspeitas (inferência): ponta solta de 12 V encostando no 5 V, VIN/GND invertidos na remontagem, ou fonte acima de 12 V sem carga. A fonte mediu 12 V sem carga (verificado em hardware, Fluke).
+- Regra nova: o Mega 1 NUNCA mais no VIN nem no jack; só pelo USB (gravação ou ponte).
+- Um Mega "novo" não apareceu no Mac (LED ON aceso, nenhum dispositivo USB no `ioreg` (verificado em host); suspeita: cabo só de carga ou chip USB defeituoso; não verificado). Descartado.
+
+**Mega 3 (clone CH340, igual ao Mega 1) na bancada**
+- Porta `/dev/cu.usbserial-10`. Gravado pela USB com a `main` + mudanças desta sessão (ver "Firmware"). Pelo VIN a 12 V, como no esquema do colega.
+- EEPROM nova: cadastros do Mega 1 não existem no Mega 3. Cadastrado nesta sessão o ID 001 (digital + senha de teste) (verificado em hardware). As digitais antigas continuam no DY50, sem dono no Mega 3.
+- arduino-cli do Mac não tinha LiquidCrystal: instalada a 1.0.7 (`arduino-cli lib install "LiquidCrystal@1.0.7"`). (verificado em host).
+
+**Remontagem do zero (pelo desenho novo)**
+- Desenho de montagem completo (protoboard + Mega + componentes), mapa elétrico e ordem de montagem: https://claude.ai/artifact/Wgzew6MQu9ScPUDyPJLH2J (versão 4) e cópias em `~/Desktop/Sistemas embarcados/montagem-completa.svg` e `fiacao-controle-acesso.html` (fora do repositório). Base: `11-esquema-completo.pdf` do colega (WhatsApp). As colunas da protoboard são sugestão; vale a ligação.
+- Correção no desenho: teclado NOVO = pino N em D(21+N) (1-4 = R1-R4 = D22-D25; 5-8 = C1-C4 = D26-D29). A versão 3 tinha a ordem do teclado antigo.
+- Bloco 1 (força): LM2596 = 7 V (relato do dono).
+- DY50: só comunicou com TX do DY50 no pino de NÚMERO 19 e o pino 18 no divisor (coluna 47); invertido não comunica. `dy50=ok` (verificado em hardware).
+- LCD: com o R16 de 1,5 kΩ não aparecia texto. Com V0 (pino 3) direto no GND apareceram quadrados; depois de refazer a fiação de dados, funcionou (relato do dono). Estado do V0 ao parar: direto no GND (confirmar).
+- Teclado: 16 teclas conferidas pela serial (relato do dono).
+- RC522 retirado da montagem (decisão do dono).
+- Porta: tela de repouso normal (D30/D31 lendo fechada) (verificado em hardware).
+
+**Firmware do Mega (não commitado; arquivos modificados na árvore de trabalho)**
+- Remoção do cartão da interface (decisão do dono "tudo do cartão"): cena do cartão saiu da home animada (3 cenas de 3 s); cadastro vai da segunda digital direto para "Crie senha (6)"; menus 4 e 5 removidos; menu fixo "1 Novo 2 Inativ." / "3 Reativ. D Sair"; repouso "ID ou digital" (ou "Digite o ID" sem DY50). O caminho de acesso por cartão, o driver do RC522 e o CardStore continuam (inertes sem o leitor).
+- Arquivos: `firmware/MegaControlador/MegaControlador.ino`, `tests/test_cartao_rfid.py`, `tests/test_lcd_led_menu5.py`, `tests/test_login_id_senha.py`, `tests/test_mega_display.py`, `tests/test_mega_tst02.py`.
+- Implementação Haiku, revisão Sonnet: aprovada (análise de código). Pendências da revisão (baixas): asserções das cenas 1 e 2 da home; teste ponta a ponta do cadastro; textos de cartão inalcançáveis ainda no código e nos testes; comentário na linha ~638 ainda cita "ID cartao dedo".
+- Suíte: 216 testes, 1 falha pré-existente (`test_server` deeply_nested) (verificado em host). Compilado: 44692 B de flash.
+- Gravado no Mega 3: `BOOT boot=25 storage=ok dy50=ok rfid=indisponivel lock_mode=1`, `LCD| Controle acesso | ID ou digital` (verificado em hardware).
+- Cadastro pelo menu 1 conferido pela serial: Coloque o dedo, Confirme digital, Crie senha, Repita senha, "Cadastrado ID 001"; acesso por ID + senha liberado (verificado em hardware). O dono relatou "cadastro de digital não funciona", mas o log mostra a digital gravada; o acesso pela digital NÃO foi testado (sem tentativa no log). Em aberto.
+- Observação: o espelho do LCD na serial mostra as senhas digitadas em claro (o LCD mascara). Comportamento antigo; decidir se mascara.
+- "RFID reiniciado sem resposta" após cada acesso: esperado sem o RC522. (inferência)
+- Menu fixo (sem 4/5) e home de 3 cenas: análise de código e testes em host; no hardware só foram vistos o repouso e o fluxo do menu 1. Os menus 2 e 3 não foram ensaiados no Mega 3 (não verificado).
+
+**Credenciais**
+- ADMIN_PIN do Mega trocado no `Config.h` local para o valor que o dono escolheu e escreveu no chat (6 dígitos; valor não registrado aqui). Exposto no chat: trocar se for uma data conhecida. (relato do dono; Config.h não aberto pelo agente, alterado por substituição de linha sem exibir)
+
+**ESP32-CAM: ainda com o firmware antigo (sem HTTPS)**
+- Confirmado pelo dono: a CAM não recebeu as mudanças do PR #1. Não aparece na rede (varredura da rede do Mac sem a CAM; verificado em host). Servidor local (porta 8080) não está rodando; a VM responde (https://dispensario-pse.duckdns.org devolve 401, pede senha; verificado em host).
+- O dono diz que o `Config.h` da CAM já está certo (rede de casa, SERVER_URL https, DEVICE_KEY). Não conferido pelo agente (arquivo não aberto).
+- Gravação pela ponte com um Arduino UNO (`/dev/cu.usbmodem101`, Arduino UNO com 16U2): RESET do Uno no GND; 5V/GND do Uno na CAM; pino 0 -> 2 x 330 -> meio -> 6 x 330 -> GND; meio -> U0R; U0T -> pino 1; IO0 no GND. Medição do meio NÃO informada.
+- Resultado: esptool v5.3.1 (`--before no-reset`, 115200) não recebeu nenhum dado da CAM, nem com RST apertado e 2 min de tentativas; escuta crua a 115200 também vazia (verificado em host). Antes, o Monitor Serial da IDE prendia a porta do Uno (fechado pelo agente).
+- Próximo diagnóstico: teste de eco do Uno (pino 0 em ponte com o pino 1, RESET no GND) para separar Uno x CAM.
+
+### Sessão 12 (13/11/2026): CAM, rede local, OTA e gravação do Mega pela CAM
+
+Bancada com o dono. Nenhuma senha, PIN ou chave registrada aqui; os valores que apareceram no chat estão na seção 7 (a).
+
+**Ponte do Uno (16U2, `/dev/cu.usbmodem101`): não serviu para a CAM**
+- Teste de eco (RESET no GND, pino 0 em ponte com o pino 1, CAM fora): o primeiro jumper não conduzia (0 bytes de volta); com outro jumper, 17422 de 17422 bytes voltaram a 115200 (verificado em hardware). O jumper defeituoso foi separado para descarte.
+- Com a CAM na ponte do Uno, nenhum byte da CAM em vários resets. Os 122 bytes zero que apareciam eram do próprio Uno ao abrir a porta (verificado em host). O dono notou depois que o Uno estava sem o jumper RESET-GND; causa provável do silêncio: o ATmega328P rodando um sketch e segurando o pino 1 (inferência).
+
+**Ponte do Mega 1 (CH340, só USB, `/dev/cu.usbserial-10`): gravação da CAM**
+- Meio do divisor do pino 0 (2 x 330 Ω, meio, 6 x 330 Ω para GND): "tensão ok" (relato do dono; valor não informado).
+- Boot da ROM em modo download recebido ("waiting for download") e `esptool chip-id`: ESP32-D0WD-V3, revisão v3.1, cristal de 40 MHz (verificado em hardware).
+- Três gravações completas pelo cabo a 115200 (`--upload-property upload.speed=115200`), todas com "Hash of data verified" nas 4 partes (verificado em hardware). As pastas de build, com segredos, foram apagadas após cada gravação (verificado em host).
+
+**Rede da CAM: a rede da casa só tem internet por IPv6; decisão de rede só local**
+- Primeiro boot com HTTPS: o `Config.h` local ainda tinha a URL http antiga; o dono trocou para a URL https. O build passou de 1156608 B para 1250048 B, com a entrada da pilha TLS (compilado).
+- A CAM conectou no Wi-Fi (192.168.1.162), mas registrou "CAM tls: falha -1, mbedtls -1 (ERROR - Generic error)" a cada ~10 s, com heap ~119 KB e maior bloco ~82 KB (verificado em hardware).
+- Causa: a rede MARCILIO&PATY (roteador TIM Live, 4G Vivo) só tem internet por IPv6. Do Mac na mesma rede, HTTPS para a VM por IPv6 (NAT64, 64:ff9b::...) respondeu 401 em 0,36 s; por IPv4 (18.231.46.1), Google e 1.1.1.1 deram tempo esgotado (verificado em host). A CAM só usa IPv4 (análise de código).
+- No roteador (Internet > Conexão Móvel), o perfil padrão "Vivo (Padrão)" já está com Tipo de IP IPV4V6 (campo travado) (relato do dono).
+- Um perfil novo "Vivo IPv4" (APN zap.vivo.com.br, Tipo de IP IPV4) derrubou a internet do 4G. O dono voltou para "Vivo (Padrão)" e a internet voltou (relato do dono). Se o dono apagou o perfil "Vivo IPv4": não verificado.
+- Um teste de IPv4 que pareceu funcionar foi feito por engano em outra rede Wi-Fi (o Mac tinha trocado de rede). Nessa rede, o duckdns resolve para 208.91.112.55 (provável filtro Fortinet; inferência). Esse teste não vale (verificado em host).
+- Decisão do dono (13/11/2026): o sistema roda só na rede local MARCILIO&PATY. A CAM não usa a VM na AWS; a VM e o DuckDNS continuam existindo, sem uso pela CAM (relato do dono).
+
+**Servidor local no Mac e painel**
+- Mac com IP fixo manual 192.168.1.50 (verificado em host). Servidor na porta 80, que o macOS permite sem sudo (verificado em host).
+- O atalho `~/Desktop/Sistemas embarcados/rodar-servidor-controle.command` passou de `--port 8080` para `--port 80`. A alteração foi feita pelo agente sem exibir o arquivo (conteúdo não exibido; o efeito na porta foi verificado, ver abaixo). A cópia do original, `rodar-servidor-controle.command.bak-8080`, contém segredos e deve ser apagada (seção 7, (j)).
+- O ADMIN_PIN do servidor (PIN do painel) foi trocado para um novo de 10 dígitos, porque o servidor exige exatamente 10 dígitos (`servidor/server.py:122`; análise de código). O valor apareceu no chat: tratar como exposto (relato do dono; valor não registrado).
+- Ao abrir o atalho com dois cliques, o Terminal abriu vazio e o servidor não subiu. Rodando `zsh ~/Desktop/"Sistemas embarcados"/rodar-servidor-controle.command` no Terminal, o servidor subiu ("Escutando em 0.0.0.0") (verificado em host).
+- Nome local do Mac (LocalHostName) trocado para `painel-controle`. `http://painel-controle.local` respondeu 200 a partir do Mac (verificado em host). De outros aparelhos da rede: não verificado. O dono preferiu `.local` a um domínio `.com` (relato do dono).
+
+**Config.h local da CAM, boot e painel**
+- `SERVER_URL` em `http://192.168.1.50` e `DEVICE_KEY` igual à do atalho (valor não registrado) (relato do dono). Build de 1156608 B, sem TLS (compilado).
+- Boot: "CAM boot ... camera=ok", "CAM wifi conectado 192.168.1.162", "CAM ota pronta controle-cam", "CAM gravacao do Mega pronta na porta 8081", sem falha nem 401 (verificado em hardware).
+- Painel em http://192.168.1.50: dispositivo "conectado, contato recente" (relato do dono).
+- Aviso: o painel local é HTTP sem criptografia; o PIN trafega aberto na rede da casa. O dono aceitou esse risco, fora do modelo de ameaça (decisão do dono).
+
+**Alimentação e Wi-Fi da CAM**
+- A CAM está na trilha de cima de 5 V da MB102 (relato do dono). Capacitor eletrolítico de 220 µF / 16 V entre 5 V e GND, na trilha, perto dos fios da CAM (relato do dono).
+- Ping para a CAM antes do capacitor: 43% de perda; roteador 0% (verificado em host). Depois: 0% a 7,5% de perda (verificado em host).
+- Latência ainda alta e instável depois do capacitor: média 0,4 a 4,2 s, picos de 9 s. É o mesmo sintoma já visto na sessão 8 (verificado em host; causa não determinada).
+- Capacitores cerâmicos 103 (10 nF) e 104 (100 nF) não servem como reserva para os picos do Wi-Fi (análise de circuito).
+
+**OTA da CAM e gravação do Mega pela CAM**
+- OTA (espota.py, senha digitada escondida), antes do capacitor: 4 falhas (Broken pipe a 94%, 78% e 16%; um timeout a 0%); autenticação sempre OK (verificado em host). A OTA não troca a partição sem a imagem completa, e a CAM voltou sozinha em ~20 s (verificado em host).
+- OTA depois do capacitor: 100% na primeira tentativa. A CAM voltou, a rota `/mega` respondeu 401 e o anúncio mDNS controle-cam apareceu (verificado em hardware).
+- Gravação do Mega pela CAM (`python3 -I scripts/gravar-mega-pela-cam.py --compilar --host 192.168.1.162`): duas falhas em "sign_on: sem resposta", com o LCD do Mega sem reiniciar. Causa: GND errado no circuito do RESET (IO12 -> 1 kΩ -> base do BC337, coletor no RESET do Mega), corrigido pelo dono (relato do dono). Depois: "ok: true", 44692 B em 11659 ms, 1 tentativa (verificado em hardware).
+- Efeito colateral: com o fio do RESET ligado, apertar o RST só da CAM reinicia o Mega (verificado em hardware). Com o fio do coletor solto, não reinicia (verificado em hardware). O dono aceitou esse comportamento (decisão do dono). Se a tranca abre nesses reinícios: não verificado.
+
+**Mega 3, relé, tranca, teclado, LCD e sensores**
+- O Mega 3 agora é alimentado pelo plugue P4, não mais pelo VIN (relato do dono). A tensão da fonte do P4 não foi informada. O 5 V do Mega não deve alimentar a CAM (análise de circuito; regulador linear).
+- Serial do Mega pela USB (`/dev/cu.usbserial-1230`): "BOOT boot=43 storage=ok dy50=ok rfid=indisponivel lock_mode=1" e "LCD| Controle acesso | ID ou digital" (verificado em hardware). Nesse momento nenhuma tecla apareceu na serial (verificado em hardware). Depois o dono informou que o teclado funciona (relato do dono; causa da falha não registrada).
+- O Mega não tem comando serial para abrir a tranca; só AUTH, LOGOUT, STATUS, LIST e RESET (análise de código).
+- Relé: o pull-down de 10 kΩ ia do sinal D35 ao IN e ao GND (desenho do dono). O relé foi trocado por um módulo de 2 canais (relés SRD-05VDC-SL-C, optoacopladores EL817, pinos GND/IN1/IN2/VCC, jumper JD-VCC), que aciona com IN em nível baixo (análise pela foto). Com ele, a tranca abria assim que ligava na tomada (relato do dono). Depois o dono trocou o relé de novo, e "deu certo": tranca funcionando (relato do dono). Não verificado: qual relé ficou, o valor de LOCK_ON no `Config.h` local do Mega e se o pull-down de 10 kΩ continua. O `Config.h` local do Mega foi editado pelo dono às 20:46 de 13/11 (verificado em host, só a data do arquivo).
+- LCD: o resistor da luz de fundo (pino 15, A) foi trocado de 10 kΩ para 330 Ω (relato do dono). Os fios de GND do LCD foram unidos num só (relato do dono; não afeta a luz, análise de circuito).
+- Sensores da porta D30/D31: os botões não funcionam (relato do dono). O módulo que o dono apresentou como sensor de proximidade é um sensor de som (microfone de eletreto, comparador, pinos AO/G/+/DO, tipo KY-038) e não serve para a porta (análise pela foto). Opções: reed switch com ímã (saída no D30, D31 no GND, sem mudar código) ou sensor IR de obstáculo FC-51 (OUT no D30, D31 no GND). O firmware considera a porta fechada com D30 e D31 em LOW (`MegaControlador.ino:570`; análise de código). Estado atual de D30/D31: não verificado.
+
+**Segurança e arquivos fora do repositório**
+- Apareceram no chat em 13/11/2026: senha do navegador do painel da VM (Caddy), PIN do painel da VM, ADMIN_PIN(s) do Mega e o novo ADMIN_PIN do servidor local. Tratar como expostos (relato do dono; valores não registrados).
+- `~/Downloads/marcelo-senhas-menu.zip`: patches e pasta MegaControlador do colega, com um `Config.h` que não foi aberto. Não é o login do painel (relato do dono). Apagar ou guardar fora de Downloads: decisão do dono, pendente.
+- `~/Desktop/Sistemas embarcados/rodar-servidor-controle.command.bak-8080` contém segredos: apagar (seção 7, (j)).
+
+## 5. Verificação (30/10/2026, 02/11/2026, 03/11/2026, 04/11/2026, 06/11/2026, 09/11/2026, 11/11/2026 e 13/11/2026, sessões 8, 9, 10, 11 e 12)
 
 | Verificação | Resultado | Evidência |
 |---|---|---|
@@ -712,6 +821,33 @@ Bancada com o dono, Mega 1 pela USB do Mac (`/dev/cu.usbserial-310`). Nenhuma se
 | Fechadura com LOCK_MODE=1, 06/11/2026 | Abriu; o Mega reinicia quando ela solta (sem 1N4007) | relato do dono; causa: inferência |
 | Testes do PR #1 (`tests/test_proxy_origem.py`, `tests/test_mega_tst02.py`, `tests/test_lcd_led_menu5.py`), branch `feat/deploy-nuvem-https`, 09/11/2026 | 18 testes OK | verificado em host (revisão Sonnet) |
 | Suíte completa após o merge `1111979`, 09/11/2026 | Não executada nesta sessão | não verificado |
+| Mega 1 após a fumaça no VIN, 11/11/2026 | Vivo pelo USB: `BOOT boot=703 storage=ok`; regulador ao lado do jack estufado (relato do dono) | verificado em hardware (USB); dano no VIN: relato do dono |
+| Mega 3 gravado com a remoção do cartão, 11/11/2026 | `BOOT boot=25 storage=ok dy50=ok rfid=indisponivel lock_mode=1`; `LCD\| Controle acesso \| ID ou digital` | verificado em hardware |
+| Cadastro ID 001 pelo menu 1, 11/11/2026 | Digital (2 leituras), senha e "Cadastrado ID 001"; acesso por ID + senha liberado; acesso pela digital não testado | verificado em hardware (serial) |
+| Suíte após a remoção do cartão, 11/11/2026 | 216 testes, 1 falha pré-existente (test_server deeply_nested) | verificado em host |
+| Ponte do Uno para a CAM, 11/11/2026 | esptool sem dados da CAM (115200, no-reset, 2 min, RST apertado) | verificado em host; causa não determinada |
+| Teste de eco do Uno (16U2), 13/11/2026 | Jumper defeituoso: 0 bytes de volta; com outro jumper, 17422 de 17422 bytes voltaram a 115200 | verificado em hardware |
+| Ponte do Uno com a CAM, 13/11/2026 | Nenhum byte da CAM em vários resets; os 122 bytes zero eram do Uno ao abrir a porta. Jumper RESET-GND do Uno estava faltando (relato do dono); causa provável do silêncio: inferência | verificado em host |
+| chip-id pela ponte do Mega 1, 13/11/2026 | ESP32-D0WD-V3, revisão v3.1, cristal 40 MHz; boot em modo download recebido | verificado em hardware |
+| Gravação da CAM pela ponte do Mega 1, 13/11/2026 | 3 gravações completas a 115200; "Hash of data verified" nas 4 partes | verificado em hardware |
+| Build da CAM com TLS, 13/11/2026 | 1250048 B (sem TLS: 1156608 B) | compilado |
+| CAM com HTTPS à VM, 13/11/2026 | "CAM tls: falha -1, mbedtls -1" a cada ~10 s; heap ~119 KB, maior bloco ~82 KB | verificado em hardware |
+| Diagnóstico IPv6-only, Mac, 13/11/2026 | HTTPS à VM por IPv6 (NAT64): 401 em 0,36 s; por IPv4 (18.231.46.1), Google e 1.1.1.1: tempo esgotado | verificado em host |
+| Perfil "Vivo IPv4" no roteador, 13/11/2026 | Derrubou a internet do 4G; voltou ao "Vivo (Padrão)" | relato do dono |
+| Servidor na porta 80 e IP fixo do Mac, 13/11/2026 | Mac em 192.168.1.50; servidor escutando em 0.0.0.0 com `zsh <atalho>` | verificado em host |
+| Atalho do servidor por dois cliques, 13/11/2026 | Terminal abriu vazio; servidor não subiu | verificado em host |
+| painel-controle.local, 13/11/2026 | HTTP 200 a partir do Mac; de outros aparelhos: não verificado | verificado em host |
+| Boot da CAM com servidor local, 13/11/2026 | "camera=ok", "wifi conectado 192.168.1.162", "ota pronta controle-cam", "gravacao do Mega pronta na porta 8081"; sem falha nem 401 | verificado em hardware |
+| Painel local com a CAM, 13/11/2026 | Dispositivo "conectado, contato recente" | relato do dono |
+| Ping para a CAM antes e depois do capacitor de 220 µF, 13/11/2026 | Antes: 43% de perda (roteador 0%). Depois: 0% a 7,5%; latência média 0,4 a 4,2 s, picos de 9 s | verificado em host (causa da latência: não determinada) |
+| OTA da CAM antes do capacitor, 13/11/2026 | 4 falhas (Broken pipe a 94%, 78% e 16%; timeout a 0%); autenticação sempre OK | verificado em host |
+| OTA da CAM depois do capacitor, 13/11/2026 | 100% na primeira tentativa; CAM voltou; `/mega` 401; mDNS controle-cam | verificado em hardware |
+| Gravação do Mega pela CAM, 13/11/2026 | Duas falhas "sign_on: sem resposta" (GND errado no RESET, corrigido pelo dono); depois "ok: true", 44692 B em 11659 ms, 1 tentativa | verificado em hardware (correção: relato do dono) |
+| Reinício do Mega pelo RST da CAM, 13/11/2026 | Com o fio do RESET ligado: o Mega reinicia; com o fio do coletor solto: não reinicia. Abertura da tranca nesses reinícios: não verificado | verificado em hardware |
+| Serial do Mega pela USB, 13/11/2026 | `BOOT boot=43 storage=ok dy50=ok rfid=indisponivel lock_mode=1`; `LCD\| Controle acesso \| ID ou digital` | verificado em hardware |
+| Teclado e tranca do Mega, 13/11/2026 | Teclado funcionando e tranca funcionando depois da troca do relé; qual relé ficou e valor de LOCK_ON: não verificado | relato do dono |
+| Sensores D30/D31, 13/11/2026 | Botões não funcionam; o sensor apresentado é de som e não serve para a porta; estado de D30/D31: não verificado | relato do dono; análise pela foto |
+| Suíte Python, 13/11/2026 | 216 testes, 1 falha pré-existente (`test_server`, deeply_nested) | verificado em host |
 
 Os mesmos números estão registrados em docs/VALIDACAO.md.
 
@@ -787,7 +923,39 @@ Os mesmos números estão registrados em docs/VALIDACAO.md.
 
 ## 7. Pendências abertas (priorizadas)
 
-- 09/11/2026 (sessão 10, atual; fim do dia):
+- 13/11/2026 (sessão 12, atual), em ordem de prioridade. Estado nos registros da seção 4 (sessão 12):
+  - (a) Credenciais expostas em 13/11/2026 (prioritário): senha do navegador do painel da VM (Caddy), PIN do painel da VM, ADMIN_PIN(s) do Mega e o novo ADMIN_PIN do servidor local. Seguem sem troca as antigas DEVICE_KEY e OTA_PASSWORD (não verificado: nenhuma troca registrada na sessão 12; confirmar com o dono). Valores nunca no chat.
+  - (b) Verificar se a tranca abre quando a CAM reinicia e derruba o Mega (reinício pelo RESET). Prioritário por segurança. Não verificado.
+  - (c) Registrar qual relé ficou, o valor de LOCK_ON e se o pull-down de 10 kΩ continua. Atualizar `Config.example.h` e `docs/MONTAGEM.md` se o relé novo aciona em nível baixo.
+  - (d) Sensor da porta: escolher reed switch ou FC-51 (o sensor de som não serve). Até lá, estado de D30/D31 a definir.
+  - (e) Teste ponta a ponta na rede local: um acesso chegando ao painel com foto.
+  - (f) Painel por outro aparelho da rede em `http://painel-controle.local`. Só verificado no próprio Mac.
+  - (g) Atalho do servidor: dois cliques abriram o Terminal vazio. Usar `zsh <atalho>` ou corrigir o atalho.
+  - (h) Latência alta da CAM (0,4 a 4,2 s) mesmo com perda baixa; investigar se voltar a derrubar a OTA. Alimentação definitiva da CAM: LM2596 em 5,0 V ou adaptador mais forte na MB102.
+  - (i) Documentação: `README.md`, `docs/MONTAGEM.md` e `docs/DEPLOY.md` ainda descrevem HTTPS na VM. Registrar a decisão de rede só local, servidor na porta 80, IP fixo, nome `painel-controle.local`, gravação da CAM pela ponte do Mega 1 (a do Uno exige RESET-GND), relé novo e capacitor.
+  - (j) Apagar `rodar-servidor-controle.command.bak-8080` (contém segredos) e decidir sobre `~/Downloads/marcelo-senhas-menu.zip`.
+  - (k) Itens antigos ainda abertos do bloco de 11/11 (as letras abaixo são as desse bloco): (f) relé no boot; (h) LOCK_MODE final; (i) docs; (j) revisão da remoção do cartão; (k) falha do `test_server`; (l) PR #1 baixos; (m) skill desatualizada (agora também: ponte pelo Mega 1, rede local); (n) arquivos na Área de Trabalho; (o) reconexão após reinício do modem; (p) divisor D16 -> IO13 nunca medido (a CAM foi religada na montagem de uso sem essa medição registrada; não verificado); (q) cor do LED; (r) digitais antigas no DY50.
+- 11/11/2026 (sessão 11; revisão de 13/11/2026 do que ficou para trás) (superado em parte pelo bloco de 13/11/2026, mantido como histórico). Itens abertos de sessões anteriores que não estavam no próximo passo da sessão 11 (seção 9); nenhum foi resolvido depois (análise dos registros):
+  - (a) Credenciais expostas (prioritário): além do ADMIN_PIN do Mega (trocado e de novo escrito no chat em 11/11), seguem a trocar a senha do navegador do painel (Caddy), o PIN do painel (= ADMIN_PIN do servidor na VM), DEVICE_KEY e OTA_PASSWORD (PDF do WhatsApp, sessão 10). Apagar o PDF das conversas e pedir ao colega que apague as cópias. Valores nunca no chat. DEVICE_KEY e OTA_PASSWORD novos entram no Config.h local da CAM antes da gravação (seção 9, passo 3, que ainda não cita as credenciais) e no /etc/controle-acesso.env da VM (reiniciar o serviço).
+  - (b) DuckDNS sem token na VM: criar `/etc/controle-acesso-duckdns.env` (modo 0600) conforme `docs/DEPLOY.md`, ou Elastic IP. Sem isso o domínio cai se o IP da VM mudar.
+  - (c) Antes de gravar a CAM: reforçar a alimentação dela (capacitor de 470 a 1000 µF no 5 V ou fonte separada); se travar ou reiniciar no handshake TLS, subir a pilha da `networkTask` (10000 B, perto da linha 540 de `firmware/Esp32CamRede/Esp32CamRede.ino`) para 12 a 16 KB. (parcialmente resolvido em 13/11/2026, sessão 12 (alimentação definitiva segue aberta, ver (h) do bloco de 13/11): capacitor de 220 µF / 16 V colocado, relato do dono; a perda de pacotes caiu, mas a latência segue alta, ver (h) do bloco de 13/11/2026; a pilha TLS não se aplica mais, porque a CAM não usa HTTPS.)
+  - (d) Depois da CAM em HTTPS: teste ponta a ponta com as credenciais novas (um acesso chegando ao painel com foto; `scripts/testar-servidor.py`).
+  - (e) Fio do RESET: ao religar, reiniciar só a CAM e conferir que o Mega não reinicia junto (LCD "Iniciando...", contador de boot). Se reiniciar: IO12 da CAM em nível baixo mais cedo no boot ou pull-down na base do transistor. (complementa o passo (6) da seção 9, que só decide religar ou deixar solto.) (executado em 13/11/2026 (sessão 12): fio do RESET religado; a questão da tranca nos reinícios segue aberta, ver (b) do bloco de 13/11/2026.)
+  - (f) Relé fechando no boot do Mega (sessão 9): medir D35 durante o reset e conferir o 10 kΩ no sinal do relé. Não investigado.
+  - (g) Sensores da porta D30/D31: prender os botões e pôr pull-up 4,7 kΩ + 100 nF (leram "aberta" sozinhos na sessão 10).
+  - (h) Decidir o LOCK_MODE final (`docs/MONTAGEM.md`, seção 6); o Mega roda com LOCK_MODE=1 desde a sessão 9.
+  - (i) Documentação de uso desatualizada: `README.md`, `docs/MONTAGEM.md`, `docs/MATERIAIS.md` e `docs/TESTES.md` nunca documentaram o RC522 (pendência da sessão 9) nem a remoção do cartão, o ID+senha, o Mega 3 na bancada, a regra do Mega 1 só pelo USB e a ponte da CAM pelo Uno. O `README.md` ainda descreve o ADMIN_PIN do Mega com 10 dígitos (linhas 142, 211 e 223; o do Mega hoje tem 6).
+  - (j) Pendências da revisão Sonnet da remoção do cartão (baixas): asserções das cenas 1 e 2 da home; teste ponta a ponta do cadastro; textos de cartão inalcançáveis no código e nos testes; comentário perto da linha 638 de `firmware/MegaControlador/MegaControlador.ino` que ainda cita "ID cartao dedo" (o repouso hoje é "ID ou digital").
+  - (k) Falha pré-existente `tests/test_server.py::test_deeply_nested_json_reports_400` (espera "JSON inválido ou corpo muito grande.", recebe "Dispositivo inválido."), aberta desde 02/11/2026. Não investigada.
+  - (l) Revisão do PR #1, itens baixos: `icons[7][8]` do LCD em SRAM (pode ir para PROGMEM); `deploy/instalar.sh` (umask 077 persiste, entrada do sed sem validação, PAINEL_SENHA visível em `ps`).
+  - (m) Skill `/sistema-embarcado` (fora do repositório, do dono) desatualizada: diz ADMIN_PIN de 10 dígitos (o do Mega hoje tem 6) e ponte da CAM pelo "segundo Mega" (a ponte atual é o Uno 16U2; o Mega 2 está em local não registrado). Correção depende de autorização do dono.
+  - (n) Fora do repositório, na pasta `~/Desktop/Sistemas embarcados/`: `Config-cam-rede-mac.h` (05/11; pelo nome, configuração da CAM, pode ter senha de rede ou chave; não aberto pelo agente). O dono decide apagar ou guardar fora da Área de Trabalho. Os sketches `DiagPS2`, `TesteRC522`, `VarreduraMatriz` e `VarreduraUno` também ficam fora do Git (não versionados).
+  - (o) Reconexão automática da CAM após reinício do modem: não verificada (sessão 8, item (4)).
+  - (p) Meio do divisor da CAM na montagem de uso (D16 -> divisor -> IO13), nunca medido desde a troca de 05/11 (sessão 8, item (1)): medir com o Fluke antes do passo (4) da seção 9 (religar a CAM). O passo (2) mede só o divisor da ponte do Uno.
+  - (q) Cor do LED RGB (cátodo ou ânodo comum) conferida pelo mapa de cores: não ensaiada (sessão 9, item (3)).
+  - (r) Digitais antigas no DY50 sem dono no Mega 3 (EEPROM nova): decidir se apaga os slots (o cadastro já limpa slot órfão ao reutilizar o ID).
+  - O item (5) "tela de repouso não indica digital fora" do bloco de 09/11 foi resolvido na sessão 11 (repouso "ID ou digital" / "Digite o ID" sem DY50; análise de código e verificado em hardware no repouso). A suíte completa após o merge foi executada na sessão 11 (216 testes, 1 falha pré-existente; verificado em host).
+- 09/11/2026 (sessão 10, fim do dia; superado em parte pelo bloco de 11/11/2026 acima, mantido como histórico):
   - (1) Religar o fio do RESET (dono, 10/11) e confirmar que reiniciar só a CAM não reinicia o Mega (seção 9, passo 1). Prioritário.
   - (2) Trocar as credenciais expostas no PDF do WhatsApp: senha do navegador do painel (Caddy), PIN do painel (= ADMIN_PIN do servidor na VM, 10 dígitos), ADMIN_PIN do Mega (6 dígitos, diferente do servidor), DEVICE_KEY e OTA_PASSWORD. Prioritário. Valores nunca no chat. Apagar o PDF das conversas e pedir ao colega que apague as cópias.
   - (3) Token do DuckDNS na VM (o timer não tem token; o domínio cai se o IP da VM mudar) ou Elastic IP.
@@ -961,6 +1129,33 @@ Pendente:
 
 ## 9. Próximo passo exato
 
+Próximo passo exato (14/11/2026, fim da sessão 12), em ordem:
+Estado (git status em 14/11/2026, verificado em host): main em 242f60d, nada commitado; 8 arquivos modificados (firmware de remoção do cartão, testes e docs das sessões 11 e 12). CAM gravada pela ponte do Mega 1, sem TLS, em 192.168.1.162, com painel local em http://192.168.1.50 (relato do dono). Tranca funcionando (relato do dono). Rede só local (decisão do dono). Detalhes na seção 4, sessão 12.
+  (0) `cd` no repositório, `git status --short`, `git log -1 --oneline`, `ls /dev/cu.*`; perguntar ao dono o que mudou desde 13/11. Não gravar nem commitar antes.
+  (1) Commit da remoção do cartão + docs das sessões 11 e 12, só se o dono pedir (stage por arquivo; sem `Config.h`, sqlite, `__pycache__` ou build; sem Co-Authored-By).
+  (2) Subir o servidor: `zsh ~/Desktop/"Sistemas embarcados"/rodar-servidor-controle.command` (Mac em 192.168.1.50 na MARCILIO&PATY); painel em http://painel-controle.local.
+  (3) Pendência (b): reiniciar só a CAM com a tranca ligada e observar se ela abre.
+  (4) Pendência (e): acesso pela digital e por ID+senha chegando ao painel com foto.
+  (5) Pendências (c) e (d): relé/LOCK_ON e sensor da porta.
+  (6) Atualizações remotas para quando a caixa estiver fechada: CAM por OTA (espota.py em 192.168.1.162, porta 3232, senha digitada escondida com `read -s`); Mega pela CAM (`python3 -I scripts/gravar-mega-pela-cam.py --compilar --host 192.168.1.162`). Ambas verificadas em 13/11.
+
+Superado pelo bloco acima (14/11/2026):
+
+Próximo passo exato (11/11/2026, fim da sessão 11; retomada prevista na sexta, 13/11/2026), em ordem:
+Estado (git status em 11/11/2026, verificado em host): branch main em 242f60d, NADA commitado na sessão 11; 8 arquivos modificados e não commitados: firmware/MegaControlador/MegaControlador.ino, tests/test_cartao_rfid.py, tests/test_lcd_led_menu5.py, tests/test_login_id_senha.py, tests/test_mega_display.py, tests/test_mega_tst02.py (remoção do cartão) e docs/HANDOFF.md, docs/VALIDACAO.md (este registro). Placas: Mega 3 na bancada, com a remoção do cartão gravada (`/dev/cu.usbserial-10`, VIN 12 V; verificado em hardware). Mega 1 (CH340) fora da montagem, só pelo USB (em 11/11 também aparecia como `/dev/cu.usbserial-10` no mesmo cabo). Uno com 16U2 como ponte da CAM em `/dev/cu.usbmodem101`. Mega 2 original: local não registrado (não verificado). CAM com o firmware antigo, sem HTTPS, NÃO gravada. RC522 fora da montagem. As portas mudam com o cabo: confirmar com `ls /dev/cu.*`. Desenho de montagem: https://claude.ai/artifact/Wgzew6MQu9ScPUDyPJLH2J (versão 4).
+  ⚠️ Mega 3 está no VIN a 12 V como o Mega 1 estava; a causa da fumaça é desconhecida. Antes de energizar: conferir polaridade VIN/GND e pontas soltas de 12 V; na dúvida, alimentar só pelo USB (inferência; sem medição).
+  (0) Primeiro passo: `cd` no repositório, `git status --short` e `git log -1 --oneline` (esperado: o acima), `ls /dev/cu.*`, e perguntar ao dono o que mudou na bancada desde 11/11. Não gravar nem commitar antes.
+  (1) Commit da remoção do cartão + docs, só se o dono pedir (stage por arquivo: os 6 arquivos de firmware/tests e docs/HANDOFF.md e docs/VALIDACAO.md; sem Config.h, sqlite, __pycache__ ou build; sem Co-Authored-By).
+  (2) CAM pela ponte do Uno: teste de eco primeiro (Uno com RESET no GND, jumper do pino 0 no pino 1, CAM fora; o agente manda texto pela `/dev/cu.usbmodem101` e confere o retorno). Se voltar: conferir LED vermelho da CAM, U0T no pino 1, meio do divisor (2,5 a 3,3 V, medir com o Fluke) no U0R, GND comum, IO0 no GND e RST. Se não voltar: Uno não serve de ponte; usar o Mega 1 (USB) ou o Mega 2 original. (o Uno 16U2 é a ponte atual; o Mega 2 era a ponte das sessões 5 e 10, ver seção 4.)
+  (3) Com a CAM respondendo: `esptool chip-id` a 115200, depois compilar (`arduino-cli compile --fqbn esp32:esp32:esp32cam:PartitionScheme=min_spiffs --build-path <scratch> firmware/Esp32CamRede`) e gravar a 115200 (`--upload-property upload.speed=115200`); apagar o build (segredos). Tirar IO0 do GND, RST, ler o boot: `CAM wifi conectado` e TLS com a VM (roteiro em `docs/DEPLOY.md`). Fechar o Monitor Serial da IDE antes (ele prende a porta).
+  (4) Religar a CAM na bancada pelo desenho (5V/GND nos trilhos de cima; IO13 em j31, IO15 em j41, IO12 em h8, IO14 no D17, IO2 no D0). Para gravar o Mega pela USB depois disso, soltar o fio do D0.
+  (5) Testar o acesso pela digital do ID 001 (ID 001 existe no Mega 3; o log do cadastro mostra a digital gravada, mas o dono relatou "cadastro de digital não funciona" e nenhuma tentativa de acesso por digital foi feita; não verificado): encostar o dedo na tela de repouso e conferir "Acesso liberado ID 001" na serial. Se falhar, regravar a digital pelo menu 1 (ID novo). Ensaio dos menus 2 e 3.
+  (6) Decidir: mascarar senhas no espelho da serial; trocar o ADMIN_PIN do Mega se for data conhecida; contraste do LCD (V0 direto no GND ou resistor menor que 1,5 kΩ); fio do RESET (j10) religado ou solto.
+  (7) Limpar no HANDOFF as linhas ainda vigentes que citam menus 4/5, "Aproxime cartao" e "ID cartao dedo" (seção 7; as da seção 4 são histórico) e o comentário do MegaControlador.ino perto da linha 638.
+  (8) Itens antigos que ficaram para trás (credenciais além do ADMIN_PIN do Mega, DuckDNS, alimentação e pilha TLS da CAM, teste ponta a ponta, fio do RESET, relé no boot, D30/D31, LOCK_MODE final, docs de uso, falha do test_server, skill e arquivo de configuração na Área de Trabalho): seção 7, bloco de 11/11/2026, itens (a) a (r). Os itens (a) e (c) entram antes ou junto do passo (3).
+
+Superado pelo bloco acima (11/11/2026):
+
 Próximo passo exato (09/11/2026, fim da sessão 10, após o merge do PR #1), em ordem:
 Conferência de partida: abrir https://dispensario-pse.duckdns.org (pede a senha do navegador e depois o PIN do painel); a CAM deve aparecer sem registro/offline até a gravação em HTTPS (esperado); conferir no LCD do Mega que a cena de repouso é a animada (confirma que `b860a9a` está gravado; não verificado).
 Estado: `main` em `1111979` (PR #1 mergeado pelo dono); Mega com o firmware da `main` gravado pela USB (LOCK_MODE=1); CAM com o firmware antigo, sem HTTPS (7 OTAs falharam pelo Wi-Fi); fio do RESET isolado (o dono religa em 10/11); credenciais expostas no WhatsApp a trocar; DuckDNS sem token na VM.
@@ -982,7 +1177,7 @@ Estado: Mega com o firmware de `bf608b8` gravado pela CAM (LOCK_MODE=1; 1N4007 i
   (5) Ensaios: 16 teclas; ID+senha certa e errada; bloqueio na 5a falha (LED vermelho piscando devagar, "Teclado travado"); cartão desconhecido; menu 4 vincular; acesso por cartão; menu 5 remover; digital; depois de cada acesso, cartão e digital devem voltar a ler sem reiniciar o Mega (valida o reinício automático); nenhum forced_open falso; cores do LED pelo mapa; painel sem novos descartes.
   (6) Investigar por que o relé fecha no boot (medir D35 durante o reset; conferir o 10 kΩ no sinal do relé); hardware opcional: 4,7 kΩ + 100 nF em D30/D31.
   (7) Decidir o LOCK_MODE final (`docs/MONTAGEM.md`, seção 6); trocar OTA_PASSWORD, DEVICE_KEY e ADMIN_PIN (valores nunca no chat); atualizar README, MONTAGEM, MATERIAIS e TESTES; Wi-Fi e alimentação da CAM; corrigir a falha pré-existente do teste do servidor.
-  (8) A skill `/sistema-embarcado` aponta para o caminho antigo `~/Desktop/controle-acesso-esp32`; o repositório está em `~/Desktop/Sistemas embarcados/controle-acesso-esp32` (o dono decide corrigir).
+  (8) A skill `/sistema-embarcado` aponta para o caminho antigo `~/Desktop/controle-acesso-esp32`; o repositório está em `~/Desktop/Sistemas embarcados/controle-acesso-esp32` (o dono decide corrigir). (Superado: a skill já usa o caminho novo; conferido em 13/11/2026.)
 
 Próximo passo exato (06/11/2026, noite; sessão 9; superado pelo bloco do fim da sessão 9 acima: itens 1 e 2 concluídos; mantido como histórico), em ordem:
 Estado: Mega gravado pela CAM com o firmware de `160534d` e LOCK_MODE=1 (fechadura abre, mas o Mega reinicia quando ela solta); CAM em 192.168.1.162 com a rota `/mega` (porta 8081); Wi-Fi da CAM instável; textos do LCD e piscada do LED em andamento (outro agente, não commitados).

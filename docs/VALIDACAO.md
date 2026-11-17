@@ -243,3 +243,26 @@ CLI não executa. Para compilar, usou-se um ctags ARM64 indicado pela propriedad
   buzzer (D36) e acionamento da fechadura (a saída D35 só foi lida em 0 nos cenários de teclado).
 - Plano gratuito do Wokwi: 50 min/mês, sessões até 5 min. Consumo total aproximado
   no mês: ~10 de 50 min.
+
+## 11/11/2026 (sessão 11)
+
+- Mega 1 após a fumaça no VIN, 11/11/2026: Vivo pelo USB: `BOOT boot=703 storage=ok`; regulador ao lado do jack estufado (relato do dono). verificado em hardware (USB); dano no VIN: relato do dono
+- Mega 3 gravado com a remoção do cartão, 11/11/2026: `BOOT boot=25 storage=ok dy50=ok rfid=indisponivel lock_mode=1`; `LCD| Controle acesso | ID ou digital`. verificado em hardware
+- Cadastro ID 001 pelo menu 1, 11/11/2026: Digital (2 leituras), senha e "Cadastrado ID 001"; acesso por ID + senha liberado; acesso pela digital não testado. verificado em hardware (serial)
+- Suíte após a remoção do cartão, 11/11/2026: 216 testes, 1 falha pré-existente (test_server deeply_nested). verificado em host
+- Ponte do Uno para a CAM, 11/11/2026: esptool sem dados da CAM (115200, no-reset, 2 min, RST apertado). verificado em host; causa não determinada
+
+## 13/11/2026 (sessão 12)
+
+- Eco do Uno (16U2), 13/11/2026: jumper defeituoso sem condução (0 bytes); com outro jumper, 17422 de 17422 bytes voltaram a 115200. verificado em hardware
+- chip-id e gravação pela ponte do Mega 1, 13/11/2026: ESP32-D0WD-V3 v3.1, cristal 40 MHz; três gravações a 115200 com "Hash of data verified" nas 4 partes. verificado em hardware
+- Diagnóstico IPv6-only, 13/11/2026: do Mac, HTTPS à VM por IPv6 (NAT64) respondeu 401 em 0,36 s; por IPv4 (18.231.46.1), Google e 1.1.1.1 deram tempo esgotado. verificado em host
+- Boot da CAM com servidor local, 13/11/2026: "camera=ok", "wifi conectado 192.168.1.162", "ota pronta controle-cam", "gravacao do Mega pronta na porta 8081"; sem falha nem 401. verificado em hardware
+- Painel local com a CAM, 13/11/2026: dispositivo "conectado, contato recente" no painel em http://192.168.1.50. relato do dono
+- painel-controle.local, 13/11/2026: HTTP 200 a partir do Mac; de outros aparelhos: não verificado. verificado em host
+- Perda de pacotes da CAM, antes e depois do capacitor de 220 µF / 16 V, 13/11/2026: antes 43% (roteador 0%); depois 0% a 7,5%. Latência média 0,4 a 4,2 s, picos de 9 s, ainda alta; causa não determinada. verificado em host
+- OTA da CAM depois do capacitor, 13/11/2026: 100% na primeira tentativa; `/mega` 401; mDNS controle-cam. Antes do capacitor, 4 falhas (verificado em host). verificado em hardware
+- Gravação do Mega pela CAM, 13/11/2026: "ok: true", 44692 B em 11659 ms, 1 tentativa, depois da correção do GND do RESET (correção: relato do dono). verificado em hardware
+- Reinício do Mega pelo RST da CAM, 13/11/2026: com o fio do RESET ligado, o Mega reinicia; com o fio do coletor solto, não reinicia. Abertura da tranca nesses reinícios: não verificado. verificado em hardware
+- Serial do Mega, 13/11/2026: `BOOT boot=43 storage=ok dy50=ok rfid=indisponivel lock_mode=1`. verificado em hardware
+- Teclado e tranca do Mega, 13/11/2026: teclado funcionando e tranca funcionando após a troca do relé; qual relé ficou e o valor de LOCK_ON: não verificado. relato do dono
